@@ -66,11 +66,11 @@ app.get('/serviceOn/:name', async (req, res) => {
 app.get('/serviceOff/:name', async (req, res) => {
   try {
     const { name } = req.params;
-    const commandResult = await execCmd(`sv -v -w 59 force-stop /etc/service/${name}`);
+    const commandResult = await execCmd(`sv -v -w 30 force-stop /etc/service/${name}`);
     // commandResult =  mock.svStopResult;
     console.log(name, commandResult);
     res.json({
-      ok: commandResult.startsWith('ok'),
+      ok: commandResult.startsWith('ok') || commandResult.startsWith('kill'),
     });
   } catch (err) {
     console.log(err);
@@ -81,11 +81,11 @@ app.get('/serviceOff/:name', async (req, res) => {
 app.get('/serviceRestart/:name', async (req, res) => {
   try {
     const { name } = req.params;
-    const commandResult = await execCmd(`sv -v -w 59 force-restart /etc/service/${name}`);
+    const commandResult = await execCmd(`sv -v -w 30 force-restart /etc/service/${name}`);
     // commandResult = exports.svRestartResult;
     console.log(name, commandResult);
     res.json({
-      ok: commandResult.startsWith('ok'),
+      ok: commandResult.startsWith('ok') || commandResult.startsWith('kill'),
     });
   } catch (err) {
     console.log(err);
