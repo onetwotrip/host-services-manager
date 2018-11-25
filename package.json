@@ -1,0 +1,28 @@
+{
+  "name": "host-services-manager",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.16.4",
+    "pug": "^2.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^5.9.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/onetwotrip/host-services-manager.git"
+  },
+  "author": "Zubkov Konstantin",
+  "license": "private",
+  "bugs": {
+    "url": "https://github.com/onetwotrip/host-services-manager/issues"
+  },
+  "homepage": "https://github.com/onetwotrip/host-services-manager#readme"
+}

@@ -1,0 +1,28 @@
+html
+  head
+    title= title
+  body
+    link(rel='stylesheet' href='style.css')
+    script(src='weblogic.js')
+    |
+    |
+    //- h2= 'MASS ACTIONS:'
+    //- button(type='button' class='btnAll' onclick='serviceAll("ON")')= 'turn ON all services'
+    //- button(type='button' class='btnAll' onclick='serviceAll("OFF")')= 'turn OFF all services '
+    //- button(type='button' class='btnAll' onclick='serviceAll("RESTART")')= 'RESTART all services'
+    //- button(type='button' class='btnAll' onclick='serviceAll("RESTART_ALIVE")')= 'RESTART all enabled services'
+    |
+    h2= 'ACTIONS BY SERVICE:'
+    ul
+      each service, id in services
+        div
+          if service.status == 'run'
+            span(class='serviceName serviceOn' id='serviceName'+id)= service.name
+          else
+            span(class='serviceName serviceOff' id='serviceName'+id)= service.name
+          button(type='button' class='btn' id='btnOn'+id onclick='serviceOn('+id+',"'+service.name+'")')= 'START'
+          button(type='button' class='btn' id='btnOff'+id onclick='serviceOff('+id+',"'+service.name+'")')= 'STOP'
+          button(type='button' class='btn' id='btnRestart'+id onclick='serviceRestart('+id+',"'+service.name+'")')= 'RESTART'
+          img(src='loader.gif' class='loader' id='loader'+id)
+
+

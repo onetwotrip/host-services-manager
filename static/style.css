@@ -1,0 +1,43 @@
+.serviceName {
+	background-color: white;
+  width: 260px;
+  display: inline-block;
+  border: solid 1px gray;
+  border-radius: 4px;
+  margin: 3px 10px 3px 0px;
+  padding: 5px 8px;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.serviceOn {
+	background-color: #dfffdf;
+}
+
+.serviceOff {
+	background-color: lightgray;
+}
+
+.serviceError {
+	background-color: lightcoral;
+}
+
+.btn {
+  margin: 0px 7px;
+  width: 80px;
+}
+
+.btnAll {
+  margin: 10px 10px;
+  width: 220px;
+  height: 50px;
+  font-size: 13px;
+  background-color: #ffcea4;
+}
+
+.loader {
+	width: 40px;
+  vertical-align: middle;
+  display: inline-block;
+  visibility: hidden;
+}
