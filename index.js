@@ -93,5 +93,5 @@ app.get('/serviceRestart/:name', async (req, res) => {
   }
 });
 
-app.listen(3040);
+app.listen(process.env.PORT || 3000);
 
