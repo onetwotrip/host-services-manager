@@ -1,3 +1,5 @@
+const urlPrefix = '/services-manager';
+
 function serviceOn(id, name) {
   serviceAction('serviceOn', id, name, postAction);
   function postAction(id, name, err, resp) {
@@ -101,6 +103,6 @@ function makeRequest(path, callback) {
       callback(this.status !== 200, data);
     }
   };
-  xhttp.open("GET", path, true);
+  xhttp.open("GET", urlPrefix + path, true);
   xhttp.send();
 }
