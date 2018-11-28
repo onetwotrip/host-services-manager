@@ -3,6 +3,8 @@ const { exec } = require('child_process');
 // const mock = require('./mock');
 
 const app = express();
+const serviceExceptions = (process.env.EXCEPTIONS && process.env.EXCEPTIONS.split(',')) || [];
+console.log(`Exceptions list: ${serviceExceptions.join()}`);
 
 const execCmd = async cmd =>
   new Promise((resolve, reject) => {
@@ -19,16 +21,22 @@ const getAvailableServices = async () => {
   let list = await execCmd('/usr/bin/sudo /usr/bin/sv status /etc/service/*');
   // list = mock.svStatusResult;
   list = list.split('\n');
-  const services = list.map((line) => {
-    if (!line) {
-      return undefined;
-    }
-    const [status, path] = line.split(': ');
-    return {
-      name: path.slice(13),
-      status,
-    };
-  }).filter(a => Boolean(a));
+
+  const services = list
+    .filter(line => Boolean(line))
+    .map((line) => {
+      const [status, path] = line.split(': ');
+      return {
+        name: path.slice(13),
+        status,
+      };
+    })
+    .filter((service) => {
+      const show = !serviceExceptions.includes(service.name);
+      // console.log(show, service.name);
+      return show;
+    });
+
   return services;
 };
 
