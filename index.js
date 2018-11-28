@@ -7,7 +7,7 @@ const app = express();
 const execCmd = async cmd =>
   new Promise((resolve, reject) => {
     exec(cmd, (error, stdout /* , stderr */) => {
-      if (error) {
+      if (error && error.code !== 1) {
         reject(error);
         return;
       }
@@ -16,7 +16,7 @@ const execCmd = async cmd =>
   });
 
 const getAvailableServices = async () => {
-  let list = await execCmd('sv status /etc/service/*');
+  let list = await execCmd('/usr/bin/sudo /usr/bin/sv status /etc/service/*');
   // list = mock.svStatusResult;
   list = list.split('\n');
   const services = list.map((line) => {
@@ -51,7 +51,7 @@ app.get('/', async (req, res) => {
 app.get('/serviceOn/:name', async (req, res) => {
   try {
     const { name } = req.params;
-    const commandResult = await execCmd(`sv start /etc/service/${name}`);
+    const commandResult = await execCmd(`/usr/bin/sudo /usr/bin/sv start /etc/service/${name}`);
     // commandResult = mock.svStartResult;
     console.log(name, commandResult);
     res.json({
@@ -66,7 +66,7 @@ app.get('/serviceOn/:name', async (req, res) => {
 app.get('/serviceOff/:name', async (req, res) => {
   try {
     const { name } = req.params;
-    const commandResult = await execCmd(`sv -v -w 30 force-stop /etc/service/${name}`);
+    const commandResult = await execCmd(`/usr/bin/sudo /usr/bin/sv -v -w 30 force-stop /etc/service/${name}`);
     // commandResult =  mock.svStopResult;
     console.log(name, commandResult);
     res.json({
@@ -81,7 +81,7 @@ app.get('/serviceOff/:name', async (req, res) => {
 app.get('/serviceRestart/:name', async (req, res) => {
   try {
     const { name } = req.params;
-    const commandResult = await execCmd(`sv -v -w 30 force-restart /etc/service/${name}`);
+    const commandResult = await execCmd(`/usr/bin/sudo /usr/bin/sv -v -w 30 force-restart /etc/service/${name}`);
     // commandResult = exports.svRestartResult;
     console.log(name, commandResult);
     res.json({
