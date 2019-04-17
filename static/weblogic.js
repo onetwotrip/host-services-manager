@@ -34,6 +34,22 @@ function serviceAction(action, id, name, postAction) {
   });
 }
 
+function chefServiceOn() {
+  enableLoadingIcon('ChefService');
+  makeRequest('/chefStart', function(err, resp) {
+    console.log('chefStart', 'response', err, resp);
+    disableLoadingIcon('ChefService');
+  });
+}
+
+function chefServiceOff() {
+  enableLoadingIcon('ChefService');
+  makeRequest('/chefKill', function(err, resp) {
+    console.log('chefKill', 'response', err, resp);
+    disableLoadingIcon('ChefService');
+  });
+}
+
 function serviceAll(action) {
   disableBigButtons();
   setTimeout(function(){

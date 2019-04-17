@@ -40,6 +40,12 @@ const getAvailableServices = async () => {
   return services;
 };
 
+const chefStatus = async () => {
+  const commandResult = await execCmd('/usr/bin/sudo pgrep chef-client');
+  console.log(`chefStatus: '${commandResult}'`);
+  return commandResult.length > 0 ? 'run' : 'stopped';
+};
+
 app.use(express.static('static'));
 app.set('view engine', 'pug');
 
@@ -48,6 +54,36 @@ app.get('/', async (req, res) => {
     const servicesList = await getAvailableServices();
     res.render('index', {
       services: servicesList,
+      chefService: {
+        status: chefStatus(),
+        name: 'chef-client',
+      },
+      ok: true,
+    });
+  } catch (err) {
+    console.log(err);
+    res.json({ ok: false });
+  }
+});
+
+app.get('/chefStart', async (req, res) => {
+  try {
+    console.log('chefStart');
+    execCmd('/usr/bin/sudo /usr/bin/chef-client'); // no wait
+    res.json({
+      ok: true,
+    });
+  } catch (err) {
+    console.log(err);
+    res.json({ ok: false });
+  }
+});
+
+app.get('/chefKill', async (req, res) => {
+  try {
+    const commandResult = await execCmd('/usr/bin/sudo killall chef-client');
+    console.log('chefKill', commandResult);
+    res.json({
       ok: true,
     });
   } catch (err) {
