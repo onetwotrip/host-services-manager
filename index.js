@@ -42,8 +42,9 @@ const getAvailableServices = async () => {
 
 const chefStatus = async () => {
   const commandResult = await execCmd('/usr/bin/sudo pgrep chef-client');
-  console.log(`chefStatus: '${commandResult}'`);
-  return commandResult.length > 0 ? 'run' : 'stopped';
+  const rows = commandResult.split('\n').length;
+  console.log(`chefStatus: ${rows} '${commandResult}'`);
+  return rows > 1 ? 'run' : 'stopped';
 };
 
 app.use(express.static('static'));
