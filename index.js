@@ -43,8 +43,9 @@ const getAvailableServices = async () => {
 const chefStatus = async () => {
   const commandResult = await execCmd('/usr/bin/sudo pgrep chef-client');
   const rows = commandResult.split('\n').length;
-  console.log(`chefStatus: ${rows} '${commandResult}'`);
-  return rows > 1 ? 'run' : 'stopped';
+  const status = rows > 2 ? 'run' : 'stopped';
+  console.log(`chefStatus: ${status} ${rows} '${commandResult}'`);
+  return status;
 };
 
 app.use(express.static('static'));
@@ -56,7 +57,7 @@ app.get('/', async (req, res) => {
     res.render('index', {
       services: servicesList,
       chefService: {
-        status: chefStatus(),
+        status: await chefStatus(),
         name: 'chef-client',
       },
       ok: true,
@@ -82,7 +83,7 @@ app.get('/chefStart', async (req, res) => {
 
 app.get('/chefKill', async (req, res) => {
   try {
-    const commandResult = await execCmd('/usr/bin/sudo killall chef-client');
+    const commandResult = await execCmd('/usr/bin/sudo killall -s 9 chef-client');
     console.log('chefKill', commandResult);
     res.json({
       ok: true,
