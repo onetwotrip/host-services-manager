@@ -1,0 +1,18 @@
+language: node_js
+node_js:
+  - "8.12.0"
+cache: npm
+before_install:
+  - "npm config set spin false"
+install:
+  - "npm install"
+script:
+  - touch hsm-$TRAVIS_TAG.tar.gz
+  - tar -czf hsm-$TRAVIS_TAG.tar.gz --exclude='./.*' --exclude=hsm-$TRAVIS_TAG.tar.gz .
+deploy:
+  provider: releases
+  api_key: $GITHUB_OAUTH_TOKEN
+  file: "hsm-$TRAVIS_TAG.tar.gz"
+  skip_cleanup: true
+  on:
+    tags: true
