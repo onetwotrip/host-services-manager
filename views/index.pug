@@ -12,6 +12,20 @@ html
     //- button(type='button' class='btnAll' onclick='serviceAll("RESTART")')= 'RESTART all services'
     //- button(type='button' class='btnAll' onclick='serviceAll("RESTART_ALIVE")')= 'RESTART all enabled services'
     |
+    h2= 'RUN CHEF:'
+    ul
+      if chefService.status == 'run'
+        span(class='serviceName serviceOn' id='chefService')= chefService.name
+      else
+        span(class='serviceName serviceOff' id='chefService')= chefService.name
+      button(type='button' class='btn' id='btnChefServiceOn' onclick='chefServiceOn()')= 'RUN'
+      button(type='button' class='btn' id='btnChefServiceOff' onclick='chefServiceOff()')= 'KILL'
+      if chefService.status == 'run'
+        img(src='loader.gif' class='loader' style="visibility:visible" id='loaderChefService')
+      else
+        img(src='loader.gif' class='loader' id='loaderChefService')
+
+    |
     h2= 'ACTIONS BY SERVICE:'
     ul
       each service, id in services
