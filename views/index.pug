@@ -12,6 +12,9 @@ html
     //- button(type='button' class='btnAll' onclick='serviceAll("RESTART")')= 'RESTART all services'
     //- button(type='button' class='btnAll' onclick='serviceAll("RESTART_ALIVE")')= 'RESTART all enabled services'
     |
+    h2= 'SERVER: ' + hostname
+    |
+    |
     h2= 'RUN CHEF:'
     ul
       if chefService.status == 'run'

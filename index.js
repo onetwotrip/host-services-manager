@@ -48,6 +48,11 @@ const chefStatus = async () => {
   return status;
 };
 
+const hostname = async () => {
+  const commandResult = await execCmd('/bin/hostname');
+  return commandResult;
+};
+
 app.use(express.static('static'));
 app.set('view engine', 'pug');
 
@@ -60,6 +65,7 @@ app.get('/', async (req, res) => {
         status: await chefStatus(),
         name: 'chef-client',
       },
+      hostname: await hostname(),
       ok: true,
     });
   } catch (err) {
