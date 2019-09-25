@@ -18,7 +18,7 @@ const execCmd = async cmd =>
   });
 
 const getAvailableServices = async () => {
-  let list = await execCmd('/usr/bin/sudo /usr/bin/sv status /etc/service/*');
+  let list = await execCmd('find /etc/service/* -type l -exec test -e {} \\; -exec /usr/bin/sudo /usr/bin/sv status {} \\;');
   // list = mock.svStatusResult;
   list = list.split('\n');
 
