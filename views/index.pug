@@ -37,6 +37,7 @@ html
             span(class='serviceName serviceOn' id='serviceName'+id)= service.name
           else
             span(class='serviceName serviceOff' id='serviceName'+id)= service.name
+          span(class='serviceName branchInfo' id='branch'+id)= service.branch
           button(type='button' class='btn' id='btnOn'+id onclick='serviceOn('+id+',"'+service.name+'")')= 'START'
           button(type='button' class='btn' id='btnOff'+id onclick='serviceOff('+id+',"'+service.name+'")')= 'STOP'
           button(type='button' class='btn' id='btnRestart'+id onclick='serviceRestart('+id+',"'+service.name+'")')= 'RESTART'

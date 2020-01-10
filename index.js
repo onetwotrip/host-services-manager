@@ -1,5 +1,7 @@
 const express = require('express');
 const { exec } = require('child_process');
+const Promise = require('bluebird');
+const fs = require('fs');
 // const mock = require('./mock');
 
 const app = express();
@@ -18,26 +20,91 @@ const execCmd = async cmd =>
   });
 
 const getAvailableServices = async () => {
-  let list = await execCmd('find /etc/service/* -type l -exec test -e {} \\; -exec /usr/bin/sudo /usr/bin/sv status {} \\;');
+  const list = await execCmd('find /etc/service/* -type l -exec test -e {} \\; -exec /usr/bin/sudo /usr/bin/sv status {} \\;');
   // list = mock.svStatusResult;
-  list = list.split('\n');
-
-  const services = list
+  return list
+    .split('\n')
     .filter(line => Boolean(line))
     .map((line) => {
       const [status, path] = line.split(': ');
       return {
+        path,
         name: path.slice(13),
         status,
       };
     })
-    .filter((service) => {
-      const show = !serviceExceptions.includes(service.name);
-      // console.log(show, service.name);
-      return show;
-    });
+    .filter(service => !serviceExceptions.includes(service.name));
+};
 
-  return services;
+const getAvailableServicesWithBranch = async () => {
+  let availableServices = await getAvailableServices();
+
+  const readFileAsync = Promise.promisify(fs.readFile);
+  const statAsync = Promise.promisify(fs.stat);
+
+  const renewAvailableServices = availableServices.map((service) => {
+    service.fileService = `${service.path.replace('service', 'sv')}/run`;
+    return service;
+  });
+
+  for(const service of renewAvailableServices){
+    let data;
+
+    service.branch = 'unknown';
+
+    try{
+      data = await statAsync(service.fileService);
+    }
+    catch(e){
+      continue;
+    }
+
+    let fileData = await readFileAsync(service.fileService, 'utf-8');
+
+
+    const firstIndex = fileData.indexOf('/home/twiket/');
+
+    fileData = fileData.substr(firstIndex);
+
+    const secondIndex = fileData.indexOf('current');
+
+    let pathLog = fileData.substr(0, secondIndex) + 'revisions.log';
+
+    try{
+      data = await statAsync(pathLog);
+    }
+    catch(e){
+      data = undefined;
+    }
+
+    if(!data){
+      try{
+        pathLog = `/home/twiket/${service.name}/revisions.log`;
+        data = await statAsync(pathLog);
+      }
+      catch(e){
+        continue;
+      }
+    }
+
+    fileData = await readFileAsync(pathLog, 'utf-8');
+
+    const splitData = fileData.split('\n').filter(Boolean);
+    const splitLastData = splitData[splitData.length - 1].split(' ');
+    const year = [
+      splitLastData[7].substr(6, 2),
+      splitLastData[7].substr(4, 2),
+      splitLastData[7].substr(0, 4)
+    ].join('.');
+    const time = [
+      splitLastData[7].substr(10, 2),
+      splitLastData[7].substr(8, 2)
+    ].join(':');
+
+    service.branch = `${splitLastData[1]}(${splitLastData[3]} ${time} ${year}`;
+  }
+
+  return renewAvailableServices;
 };
 
 const chefStatus = async () => {
@@ -58,7 +125,8 @@ app.set('view engine', 'pug');
 
 app.get('/', async (req, res) => {
   try {
-    const servicesList = await getAvailableServices();
+    const servicesList = await getAvailableServicesWithBranch();
+
     res.render('index', {
       services: servicesList,
       chefService: {

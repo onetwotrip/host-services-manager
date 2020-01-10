@@ -18,6 +18,11 @@
 	background-color: lightgray;
 }
 
+.branchInfo {
+    background-color: lightgray;
+    width: 600px;
+}
+
 .serviceError {
 	background-color: lightcoral;
 }
