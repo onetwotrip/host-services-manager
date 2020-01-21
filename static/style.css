@@ -18,6 +18,11 @@
 	background-color: lightgray;
 }
 
+.branchInfo {
+    background-color: lightgray;
+    width: 600px;
+}
+
 .serviceError {
 	background-color: lightcoral;
 }
@@ -25,6 +30,11 @@
 .btn {
   margin: 0px 7px;
   width: 80px;
+}
+
+.btnMass {
+    margin: 0px 7px;
+    height: 25px;
 }
 
 .btnAll {

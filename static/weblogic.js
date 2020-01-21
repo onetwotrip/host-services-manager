@@ -56,9 +56,29 @@ function chefServiceOff() {
 
 function serviceAll(action) {
   disableBigButtons();
-  setTimeout(function(){
-    enableBigButtons();
-  }, 1000)
+
+  makeRequest(`/serviceAll/${action}`, function(err, resp){
+    console.log('serviceAll', 'response', err, resp);
+
+    resp.items.forEach((item, id) => {
+      let color = 'error';
+
+      if(item){
+        if(action === 'ON'){
+          color = 'serviceOn';
+        }
+        else if(action === 'OFF'){
+          color = 'serviceOff'
+        }
+      }
+
+      setColor(id, color);
+    });
+
+    setTimeout(function(){
+      enableBigButtons();
+    }, 1000);
+  });
 }
 
 // -------------- UI ------------------

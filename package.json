@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "bluebird": "^3.7.2",
     "express": "^4.16.4",
+    "js-yaml": "^3.13.1",
     "pug": "^2.0.3"
   },
   "devDependencies": {
