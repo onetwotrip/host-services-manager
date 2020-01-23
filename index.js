@@ -210,7 +210,7 @@ const getYamlByNameService = async (nameService) => {
 const doDependentServices = async (nameService, command) => {
   const parseFile = await getYamlByNameService(nameService);
 
-  if(!parseFile.dependentServices){
+  if(!parseFile || !parseFile.dependentServices){
     return;
   }
 
@@ -272,6 +272,8 @@ app.get('/serviceAll/:action', async (req, res) => {
     await Promise.map(
         servicesList,
         async (service) => {
+          console.log(`start for ${action}:`, service);
+
           const index = servicesList.findIndex(s => s.name === service.name);
           let generalCommand = '/usr/bin/sudo /usr/bin/sv start /etc/service/';
 
@@ -284,6 +286,8 @@ app.get('/serviceAll/:action', async (req, res) => {
 
           const commandResult = await execCmd(`${generalCommand}${service.name}`);
 
+          console.log(`finish for ${action}:`, service);
+
           items[index] = commandResult.startsWith('ok') || commandResult.startsWith('kill');
         },
         {
@@ -291,9 +295,8 @@ app.get('/serviceAll/:action', async (req, res) => {
         }
     );
 
-    console.log(action, items);
-
     res.json({
+      ok: true,
       items
     });
   } catch (err) {

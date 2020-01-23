@@ -64,7 +64,7 @@ function serviceAll(action) {
       let color = 'error';
 
       if(item){
-        if(action === 'ON'){
+        if(['ON', 'RESTART'].includes(action)){
           color = 'serviceOn';
         }
         else if(action === 'OFF'){
