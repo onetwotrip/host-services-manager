@@ -1,8 +1,23 @@
-const urlPrefix = '/services-manager';
+const urlPrefix = '';
+
+function closePopup(){
+  document.getElementById('dependentServiceOffModal').style.visibility = 'hidden';
+  document.getElementById('overlay').classList.remove('active');
+}
+
+function showModal(headerText, bodyText){
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('dependentServiceOffModal').style.visibility = 'visible';
+  document.getElementById('dependentServiceOffModalHeader').innerHTML = headerText;
+  document.getElementById('dependentServiceOffModalBody').innerHTML = bodyText;
+}
 
 function serviceOn(id, name) {
   serviceAction('serviceOn', id, name, postAction);
   function postAction(id, name, err, resp) {
+    if([1]){
+      showModal();
+    }
     setColor(id, resp && resp.ok ? 'serviceOn' : 'error');
   }
 }
@@ -60,11 +75,11 @@ function serviceAll(action) {
   makeRequest(`/serviceAll/${action}`, function(err, resp){
     console.log('serviceAll', 'response', err, resp);
 
-    resp.items.forEach((item, id) => {
+    resp.items.forEach((item) => {
       let color = 'error';
 
-      if(item){
-        if(['ON', 'RESTART'].includes(action)){
+      if(item.ok){
+        if(['ON', 'RESTART', 'RESTART_ALIVE'].includes(action)){
           color = 'serviceOn';
         }
         else if(action === 'OFF'){
@@ -72,7 +87,7 @@ function serviceAll(action) {
         }
       }
 
-      setColor(id, color);
+      setColor(item.id, color);
     });
 
     setTimeout(function(){

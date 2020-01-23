@@ -2,7 +2,8 @@ const express = require('express');
 const { exec } = require('child_process');
 const Promise = require('bluebird');
 const fs = require('fs');
-const yaml = require('js-yaml')
+const yaml = require('js-yaml');
+const uuid = require('uuid');
 // const mock = require('./mock');
 
 const app = express();
@@ -43,9 +44,15 @@ const getAvailableServices = async () => {
     .filter(line => Boolean(line))
     .map((line) => {
       const [status, path] = line.split(': ');
+      const name = path.slice(13);
+
+      MAP_SERVICES[name] = MAP_SERVICES[name] || {parents: [], childs: []};
+      MAP_SERVICES[name].id = MAP_SERVICES[name].id || uuid();
+
       return {
+        id: MAP_SERVICES[name].id.split('-')[0],
         path,
-        name: path.slice(13),
+        name,
         status,
       };
     })
@@ -266,21 +273,25 @@ app.get('/serviceOff/:name', async (req, res) => {
 app.get('/serviceAll/:action', async (req, res) => {
   try {
     const { action } = req.params;
-    const servicesList = await getAvailableServicesWithBranch();
+    let servicesList = await getAvailableServicesWithBranch();
     const items = [];
+
+    if(action !== 'RESTART'){
+      const filterStatus = ['OFF', 'RESTART_ALIVE'].includes(action) ? 'run' : 'down';
+      servicesList = servicesList.filter(service => service.status === filterStatus);
+    }
 
     await Promise.map(
         servicesList,
         async (service) => {
           console.log(`start for ${action}:`, service);
 
-          const index = servicesList.findIndex(s => s.name === service.name);
           let generalCommand = '/usr/bin/sudo /usr/bin/sv start /etc/service/';
 
           if(action === 'OFF'){
             generalCommand = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-stop /etc/service/';
           }
-          else if(action === 'RESTART'){
+          else if(['RESTART_ALIVE', 'RESTART'].includes(action)){
             generalCommand = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-restart /etc/service/';
           }
 
@@ -288,7 +299,7 @@ app.get('/serviceAll/:action', async (req, res) => {
 
           console.log(`finish for ${action}:`, service);
 
-          items[index] = commandResult.startsWith('ok') || commandResult.startsWith('kill');
+          items.push({id: service.id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill')});
         },
         {
           concurrency: 5
