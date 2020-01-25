@@ -1,4 +1,4 @@
-const urlPrefix = '';
+const urlPrefix = '/services-manager';
 
 function closePopup(){
   document.getElementById('dependentServiceOffModal').style.visibility = 'hidden';
@@ -15,17 +15,22 @@ function showModal(headerText, bodyText){
 function serviceOn(id, name) {
   serviceAction('serviceOn', id, name, postAction);
   function postAction(id, name, err, resp) {
-    if([1]){
-      showModal();
-    }
-    setColor(id, resp && resp.ok ? 'serviceOn' : 'error');
+    resp.items.forEach((item) => {
+      setColor(item.id, item.ok ? 'serviceOn' : 'error');
+    });
   }
 }
 
 function serviceOff(id, name) {
   serviceAction('serviceOff', id, name, postAction);
   function postAction(id, name, err, resp) {
-    setColor(id, resp && resp.ok ? 'serviceOff' : 'error');
+    if(resp && Array.isArray(resp.parentsServices) && resp.parentsServices.length){
+      showModal('Внимание!', `При выключении этого сервиса гарантируются проблемы со следующими сервисами: ${resp.parentsServices.join(',')}`);
+    }
+
+    resp.items.forEach((item) => {
+      setColor(item.id, item.ok ? 'serviceOff' : 'error');
+    });
   }
 }
 
@@ -108,7 +113,7 @@ function setColor (id, state) {
 }
 
 function enableLoadingIcon(id) {
-  console.log('loader' + id)
+  console.log('loader' + id);
   document.getElementById('loader' + id).style.visibility = "visible";
 }
 

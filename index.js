@@ -3,13 +3,17 @@ const { exec } = require('child_process');
 const Promise = require('bluebird');
 const fs = require('fs');
 const yaml = require('js-yaml');
-const uuid = require('uuid');
+const uuid = require('uuid4');
 // const mock = require('./mock');
 
 const app = express();
 const serviceExceptions = (process.env.EXCEPTIONS && process.env.EXCEPTIONS.split(',')) || [];
 console.log(`Exceptions list: ${serviceExceptions.join()}`);
 const MAP_SERVICES = {};
+
+function clone(obj){
+  return JSON.parse(JSON.stringify(obj));
+}
 
 function createMapByYamlFiles(services){
   services.forEach((service) => {
@@ -18,10 +22,46 @@ function createMapByYamlFiles(services){
     MAP_SERVICES[service.name] = MAP_SERVICES[service.name] || {parents: [], childs: []};
 
     service.yamlFile.dependentServices.forEach((dependentService) => {
-      MAP_SERVICES[service.name].childs.push(dependentService);
+      if(!MAP_SERVICES[service.name].childs.includes(dependentService)){
+        MAP_SERVICES[service.name].childs.push(dependentService);
+      }
+
       MAP_SERVICES[dependentService] = MAP_SERVICES[dependentService] || {parents: [], childs: []};
-      MAP_SERVICES[dependentService].parents.push(service.name);
+
+      if(!MAP_SERVICES[dependentService].parents.includes(service.name)){
+        MAP_SERVICES[dependentService].parents.push(service.name);
+      }
     });
+  });
+}
+
+function getOffChildsServices(offServiceName, childsNames, infoObject){
+  childsNames.forEach((childName) => {
+    if(MAP_SERVICES[childName].status === 'down' || infoObject.runParents.includes(childName) || infoObject.needOff.includes(childName)){
+      return;
+    }
+    // 1. нет родителей и детей
+    // 2 не входит в список родителей - защита от рекурсий
+    if(!MAP_SERVICES[childName].parents.length && !MAP_SERVICES[childName].childs.length && !infoObject.runParents.includes(childName)){
+      if(!infoObject.needOff.includes(childName)){
+        infoObject.needOff.push(childName);
+      }
+      return;
+    }
+
+    const parents = MAP_SERVICES[childName].parents
+        .filter(parent => parent.name !== offServiceName && parent.status === 'run')
+        .map(parent => parent.name);
+
+    parents.forEach((parent) => {
+      if(!infoObject.runParents.includes(parent)) infoObject.runParents.push(parent);
+    });
+
+    if(!parents.length && !infoObject.needOff.includes(childName)){
+      infoObject.needOff.push(childName);
+    }
+
+    getOffChildsServices(offServiceName, clone(MAP_SERVICES[childName].childs), infoObject);
   });
 }
 
@@ -39,7 +79,7 @@ const execCmd = async cmd =>
 const getAvailableServices = async () => {
   const list = await execCmd('find /etc/service/* -type l -exec test -e {} \\; -exec /usr/bin/sudo /usr/bin/sv status {} \\;');
   // list = mock.svStatusResult;
-  return 'off: /etc/service/avia'/*list*/
+  return list
     .split('\n')
     .filter(line => Boolean(line))
     .map((line) => {
@@ -47,10 +87,11 @@ const getAvailableServices = async () => {
       const name = path.slice(13);
 
       MAP_SERVICES[name] = MAP_SERVICES[name] || {parents: [], childs: []};
-      MAP_SERVICES[name].id = MAP_SERVICES[name].id || uuid();
+      MAP_SERVICES[name].id = (MAP_SERVICES[name].id || uuid()).split('-')[0];
+      MAP_SERVICES[name].status = status;
 
       return {
-        id: MAP_SERVICES[name].id.split('-')[0],
+        id: MAP_SERVICES[name].id,
         path,
         name,
         status,
@@ -74,7 +115,7 @@ const getFileDataByRunFile = async (serviceName, runFilePath, nameFileService) =
 
   let fileData = await readFileAsync(runFilePath, 'utf-8');
 
-  const firstIndex = fileData.indexOf('/home/aleksandr/Project/');
+  const firstIndex = fileData.indexOf('/home/twiket/');
 
   fileData = fileData.substr(firstIndex);
 
@@ -91,7 +132,7 @@ const getFileDataByRunFile = async (serviceName, runFilePath, nameFileService) =
 
   if(!data){
     try{
-      pathLog = `/home/aleksandr/Project/${serviceName}/${nameFileService}`;
+      pathLog = `/home/twiket/${serviceName}/${nameFileService}`;
       data = await statAsync(pathLog);
     }
     catch(e){
@@ -214,16 +255,26 @@ const getYamlByNameService = async (nameService) => {
   return yaml.safeLoad(fileData);
 };
 
-const doDependentServices = async (nameService, command) => {
+const doDependentServices = async (nameService, command, skipStatus) => {
   const parseFile = await getYamlByNameService(nameService);
 
   if(!parseFile || !parseFile.dependentServices){
-    return;
+    return [];
   }
 
-  for(const nameServiceSec of parseFile.dependentServices){
-    await execCmd(`${command}${nameServiceSec}`)
+  const dependentServices = parseFile.dependentServices.filter(ds => !skipStatus || MAP_SERVICES[ds].status !== skipStatus);
+  const items = [];
+
+  for(const nameServiceSec of dependentServices){
+    console.log('doDependentServices', 'START', nameServiceSec);
+    const commandResult = await execCmd(`${command}${nameServiceSec}`);
+
+    items.push(
+        {id: MAP_SERVICES[nameServiceSec].id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill')}
+    )
   }
+
+  return items;
 };
 
 app.get('/serviceOn/:name', async (req, res) => {
@@ -231,16 +282,28 @@ app.get('/serviceOn/:name', async (req, res) => {
     const { name } = req.params;
     const command = '/usr/bin/sudo /usr/bin/sv start /etc/service/';
     const commandResult = await execCmd(`${command}${name}`);
+
+    let startServices;
+
     try{
-      await doDependentServices(name, command);
+      startServices = await doDependentServices(name, command, 'run');
     }
     catch(e){
       console.log('error start dep services', e);
+      startServices = [];
     }
+
+    MAP_SERVICES[name].status = 'run';
+    startServices.push({
+      id: MAP_SERVICES[name].id,
+      ok: commandResult.startsWith('ok')
+    });
+
     // commandResult = mock.svStartResult;
     console.log(name, commandResult);
     res.json({
-      ok: commandResult.startsWith('ok'),
+      items: startServices,
+      ok: true
     });
   } catch (err) {
     console.log(err);
@@ -252,17 +315,36 @@ app.get('/serviceOff/:name', async (req, res) => {
   try {
     const { name } = req.params;
     const command = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-stop /etc/service/';
-    const commandResult = await execCmd(`${command}${name}`);
-    try{
-      await doDependentServices(name, command);
-    }
-    catch(e){
-      console.log('error stop dep services', e);
-    }
+    let commandResult = await execCmd(`${command}${name}`);
     // commandResult =  mock.svStopResult;
+    MAP_SERVICES[name].status = 'down';
+    const runParentServices = (MAP_SERVICES[name] && MAP_SERVICES[name].parents || [])
+        .filter(parent => MAP_SERVICES[parent].status === 'run');
+    const finishResult = {
+      runParents: runParentServices.map(runParent => runParent.name),
+      needOff: [name]
+    };
+    // идём вниз по детям и ищем кого можно выключить
+    getOffChildsServices(name, clone(MAP_SERVICES[name].childs), finishResult);
+
+    finishResult.needOff = finishResult.needOff.filter(serviceName => !finishResult.runParents.includes(serviceName));
+
+    const items = [];
+
+    if(finishResult.needOff.length){
+      for(const needOff of finishResult.needOff){
+        commandResult = await execCmd(`${command}${needOff}`);
+        items.push(
+            {id: MAP_SERVICES[needOff].id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill')}
+        )
+      }
+    }
+
     console.log(name, commandResult);
     res.json({
-      ok: commandResult.startsWith('ok') || commandResult.startsWith('kill'),
+      parentsServices: runParentServices,
+      ok: true,
+      items
     });
   } catch (err) {
     console.log(err);
@@ -295,6 +377,8 @@ app.get('/serviceAll/:action', async (req, res) => {
             generalCommand = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-restart /etc/service/';
           }
 
+          MAP_SERVICES[service.name].status = action === 'OFF' ? 'down' : 'run';
+
           const commandResult = await execCmd(`${generalCommand}${service.name}`);
 
           console.log(`finish for ${action}:`, service);
@@ -319,8 +403,18 @@ app.get('/serviceAll/:action', async (req, res) => {
 app.get('/serviceRestart/:name', async (req, res) => {
   try {
     const { name } = req.params;
-    const commandResult = await execCmd(`/usr/bin/sudo /usr/bin/sv -v -w 30 force-restart /etc/service/${name}`);
+    const command = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-restart /etc/service/';
+    const commandResult = await execCmd(`${command}${name}`);
     // commandResult = exports.svRestartResult;
+    try{
+      await doDependentServices(name, command);
+    }
+    catch(e){
+      console.log('error restart dep services', e);
+    }
+
+    MAP_SERVICES[name].status = 'run';
+
     console.log(name, commandResult);
     res.json({
       ok: commandResult.startsWith('ok') || commandResult.startsWith('kill'),
