@@ -77,6 +77,9 @@ function chefServiceOff() {
 function serviceAll(action) {
   disableBigButtons();
 
+  const message = ['RESTART', 'RESTART_ALIVE'].includes(action) ? 'перезагрузка' : 'запуск';
+
+  showModal('Внимание!', `Идёт ${action === 'OFF' ? 'выключение' : message} сервисов`);
   makeRequest(`/serviceAll/${action}`, function(err, resp){
     console.log('serviceAll', 'response', err, resp);
 
@@ -95,6 +98,7 @@ function serviceAll(action) {
       setColor(item.id, color);
     });
 
+    closePopup();
     setTimeout(function(){
       enableBigButtons();
     }, 1000);
@@ -129,7 +133,7 @@ function disableServiceButtons(id) {
 }
 
 function disableBigButtons() {
-  const bigButtons = document.getElementsByClassName('btnAll');
+  const bigButtons = document.getElementsByClassName('btnMass');
   Object.keys(bigButtons).forEach(function(id) {
     bigButtons[id].setAttribute('disabled', 'disabled');
   });
@@ -143,7 +147,7 @@ function enableServiceButtons(id) {
 }
 
 function enableBigButtons() {
-  let bigButtons = document.getElementsByClassName('btnAll');
+  let bigButtons = document.getElementsByClassName('btnMass');
   Object.keys(bigButtons).forEach(function(id) {
     bigButtons[id].removeAttribute('disabled');
   });

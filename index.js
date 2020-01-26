@@ -65,6 +65,18 @@ function getOffChildsServices(offServiceName, childsNames, infoObject){
   });
 }
 
+function getOnChildsServices(childsNames, infoObject){
+  childsNames.forEach((childName) => {
+    if(infoObject.includes(childName)) return;
+
+    infoObject.push(childName);
+
+    if(!MAP_SERVICES[childName].childs.length) return;
+
+    getOnChildsServices(MAP_SERVICES[childName].childs, infoObject);
+  });
+}
+
 const execCmd = async cmd =>
   new Promise((resolve, reject) => {
     exec(cmd, (error, stdout /* , stderr */) => {
@@ -283,18 +295,23 @@ app.get('/serviceOn/:name', async (req, res) => {
     const command = '/usr/bin/sudo /usr/bin/sv start /etc/service/';
     const commandResult = await execCmd(`${command}${name}`);
 
-    let startServices;
+    const items = [];
+    let startServices = [];
 
-    try{
-      startServices = await doDependentServices(name, command, 'run');
-    }
-    catch(e){
-      console.log('error start dep services', e);
-      startServices = [];
-    }
+    getOnChildsServices(MAP_SERVICES[name].childs || [], startServices);
 
     MAP_SERVICES[name].status = 'run';
-    startServices.push({
+
+    if(startServices.length){
+      for(const needOn of startServices){
+        const commandResult = await execCmd(`${command}${needOn}`);
+        items.push(
+            {id: MAP_SERVICES[needOn].id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill')}
+        )
+      }
+    }
+
+    items.push({
       id: MAP_SERVICES[name].id,
       ok: commandResult.startsWith('ok')
     });
@@ -302,7 +319,7 @@ app.get('/serviceOn/:name', async (req, res) => {
     // commandResult = mock.svStartResult;
     console.log(name, commandResult);
     res.json({
-      items: startServices,
+      items,
       ok: true
     });
   } catch (err) {
