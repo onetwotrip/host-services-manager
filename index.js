@@ -179,8 +179,8 @@ const getAvailableServicesWithBranch = async () => {
         splitLastData[7].substr(0, 4)
       ].join('.');
       const time = [
-        splitLastData[7].substr(10, 2),
-        splitLastData[7].substr(8, 2)
+        splitLastData[7].substr(8, 2),
+        splitLastData[7].substr(10, 2)
       ].join(':');
 
       service.branch = `${splitLastData[1]}(${splitLastData[3]} ${time} ${year}`;
