@@ -141,3 +141,7 @@
   visibility: visible;
   opacity: 1;
 }
+
+.serviceRow {
+  width: max-content;
+}

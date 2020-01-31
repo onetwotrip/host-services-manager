@@ -32,7 +32,7 @@ html
     h2= 'ACTIONS BY SERVICE:'
     ul
       each service, id in services
-        div
+        div(class='serviceRow')
           if service.status == 'run'
             div(class='serviceName serviceOn tooltip' id='serviceName'+service.id)= service.name
               span(class='tooltiptext')= service.yamlFileShow

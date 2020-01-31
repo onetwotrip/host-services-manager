@@ -17,8 +17,9 @@ function clone(obj){
 
 function mappingYaml(serviceName, yaml){
   if(!yaml){
-    return '';
+    return 'Нет описания для сервиса.';
   }
+
   return `
     Описание: ${yaml.description || ''}
     Родительские сервисы: ${MAP_SERVICES[serviceName].parents.join(',')}
