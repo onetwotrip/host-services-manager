@@ -15,6 +15,17 @@ function clone(obj){
   return JSON.parse(JSON.stringify(obj));
 }
 
+function mappingYaml(serviceName, yaml){
+  if(!yaml){
+    return '';
+  }
+  return `
+    Описание: ${yaml.description || ''}
+    Родительские сервисы: ${MAP_SERVICES[serviceName].parents.join(',')}
+    Дочерние сервисы: ${MAP_SERVICES[serviceName].childs.join(',')}
+  `;
+}
+
 function createMapByYamlFiles(services){
   services.forEach((service) => {
     if(!service.yamlFile || !Array.isArray(service.yamlFile.dependentServices)) return;
@@ -185,6 +196,7 @@ const getAvailableServicesWithBranch = async () => {
 
       service.branch = `${splitLastData[1]}(${splitLastData[3]} ${time} ${year}`;
       service.yamlFile = await getYamlByNameService(service.name);
+      service.yamlFileShow = mappingYaml(service.name, service.yamlFile);
     }
     catch(e){
       console.log('getAvailableServicesWithBranch_error', e);
