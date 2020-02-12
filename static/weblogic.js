@@ -1,16 +1,36 @@
 const urlPrefix = '/services-manager';
 
+function closePopup(){
+  document.getElementById('dependentServiceOffModal').style.visibility = 'hidden';
+  document.getElementById('overlay').classList.remove('active');
+}
+
+function showModal(headerText, bodyText){
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('dependentServiceOffModal').style.visibility = 'visible';
+  document.getElementById('dependentServiceOffModalHeader').innerHTML = headerText;
+  document.getElementById('dependentServiceOffModalBody').innerHTML = bodyText;
+}
+
 function serviceOn(id, name) {
   serviceAction('serviceOn', id, name, postAction);
   function postAction(id, name, err, resp) {
-    setColor(id, resp && resp.ok ? 'serviceOn' : 'error');
+    resp.items.forEach((item) => {
+      setColor(item.id, item.ok ? 'serviceOn' : 'error');
+    });
   }
 }
 
 function serviceOff(id, name) {
   serviceAction('serviceOff', id, name, postAction);
   function postAction(id, name, err, resp) {
-    setColor(id, resp && resp.ok ? 'serviceOff' : 'error');
+    if(resp && Array.isArray(resp.parentsServices) && resp.parentsServices.length){
+      showModal('Внимание!', `При выключении этого сервиса гарантируются проблемы со следующими сервисами: ${resp.parentsServices.join(',')}`);
+    }
+
+    resp.items.forEach((item) => {
+      setColor(item.id, item.ok ? 'serviceOff' : 'error');
+    });
   }
 }
 
@@ -56,9 +76,33 @@ function chefServiceOff() {
 
 function serviceAll(action) {
   disableBigButtons();
-  setTimeout(function(){
-    enableBigButtons();
-  }, 1000)
+
+  const message = ['RESTART', 'RESTART_ALIVE'].includes(action) ? 'перезагрузка' : 'запуск';
+
+  showModal('Внимание!', `Идёт ${action === 'OFF' ? 'выключение' : message} сервисов`);
+  makeRequest(`/serviceAll/${action}`, function(err, resp){
+    console.log('serviceAll', 'response', err, resp);
+
+    resp.items.forEach((item) => {
+      let color = 'error';
+
+      if(item.ok){
+        if(['ON', 'RESTART', 'RESTART_ALIVE'].includes(action)){
+          color = 'serviceOn';
+        }
+        else if(action === 'OFF'){
+          color = 'serviceOff'
+        }
+      }
+
+      setColor(item.id, color);
+    });
+
+    closePopup();
+    setTimeout(function(){
+      enableBigButtons();
+    }, 1000);
+  });
 }
 
 // -------------- UI ------------------
@@ -73,7 +117,7 @@ function setColor (id, state) {
 }
 
 function enableLoadingIcon(id) {
-  console.log('loader' + id)
+  console.log('loader' + id);
   document.getElementById('loader' + id).style.visibility = "visible";
 }
 
@@ -89,7 +133,7 @@ function disableServiceButtons(id) {
 }
 
 function disableBigButtons() {
-  const bigButtons = document.getElementsByClassName('btnAll');
+  const bigButtons = document.getElementsByClassName('btnMass');
   Object.keys(bigButtons).forEach(function(id) {
     bigButtons[id].setAttribute('disabled', 'disabled');
   });
@@ -103,7 +147,7 @@ function enableServiceButtons(id) {
 }
 
 function enableBigButtons() {
-  let bigButtons = document.getElementsByClassName('btnAll');
+  let bigButtons = document.getElementsByClassName('btnMass');
   Object.keys(bigButtons).forEach(function(id) {
     bigButtons[id].removeAttribute('disabled');
   });
