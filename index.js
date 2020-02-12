@@ -168,45 +168,45 @@ const getFileDataByRunFile = async (serviceName, runFilePath, nameFileService) =
 };
 
 const getAvailableServicesWithBranch = async () => {
-  let availableServices = await getAvailableServices();
+	let availableServices = await getAvailableServices();
 
-  const renewAvailableServices = availableServices.map((service) => {
-    service.fileService = `${service.path.replace('service', 'sv')}/run`;
-    return service;
-  });
+	const renewAvailableServices = availableServices.map((service) => {
+		service.fileService = `${service.path.replace('service', 'sv')}/run`;
+		return service;
+	});
 
-  for(const service of renewAvailableServices){
-    service.branch = 'unknown';
+	for(const service of renewAvailableServices){
+		service.branch = 'unknown';
 
-    const fileData = await getFileDataByRunFile(service.name, service.fileService, 'revisions.log');
+		const fileData = await getFileDataByRunFile(service.name, service.fileService, 'revisions.log');
 
-    if(!fileData) continue;
+		if(!fileData) continue;
 
-    try{
-      const splitData = fileData.split('\n').filter(Boolean);
-      const splitLastData = splitData[splitData.length - 1].split(' ');
-      const year = [
-        splitLastData[7].substr(6, 2),
-        splitLastData[7].substr(4, 2),
-        splitLastData[7].substr(0, 4)
-      ].join('.');
-      const time = [
-        splitLastData[7].substr(8, 2),
-        splitLastData[7].substr(10, 2)
-      ].join(':');
+		try{
+			const splitData = fileData.split('\n').filter(Boolean);
+			const splitLastData = splitData[splitData.length - 1].split(' ');
+			const year = [
+				splitLastData[7].substr(6, 2),
+				splitLastData[7].substr(4, 2),
+				splitLastData[7].substr(0, 4)
+			].join('.');
+			const time = [
+				splitLastData[7].substr(8, 2),
+				splitLastData[7].substr(10, 2)
+			].join(':');
 
-      service.branch = `${splitLastData[1]}(${splitLastData[3]} ${time} ${year}`;
-      service.yamlFile = await getYamlByNameService(service.name);
-      service.yamlFileShow = mappingYaml(service.name, service.yamlFile);
-    }
-    catch(e){
-      console.log('getAvailableServicesWithBranch_error', e);
-    }
-  }
+			service.branch = `${splitLastData[1]}(${splitLastData[3]} ${time} ${year}`;
+			service.yamlFile = await getYamlByNameService(service.name);
+			service.yamlFileShow = mappingYaml(service.name, service.yamlFile);
+		}
+		catch(e){
+			console.log('getAvailableServicesWithBranch_error', e);
+		}
+	}
 
-  createMapByYamlFiles(renewAvailableServices);
+	createMapByYamlFiles(renewAvailableServices);
 
-  return renewAvailableServices;
+	return renewAvailableServices;
 };
 
 const chefStatus = async () => {
