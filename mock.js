@@ -68,4 +68,3 @@ run: /etc/service/twapi-vas: (pid 24438) 120419s; run: log: (pid 1044) 1935625s`
 exports.svStartResult = 'ok: run: /etc/service/twapi-vas: (pid 32084) 0s';
 exports.svStopResult = 'ok: run: /etc/service/twapi-vas: (pid 32084) 0s';
 exports.svRestartResult = 'ok: run: /etc/service/twapi-vas: (pid 32084) 0s';
-

@@ -11,65 +11,68 @@ const serviceExceptions = (process.env.EXCEPTIONS && process.env.EXCEPTIONS.spli
 console.log(`Exceptions list: ${serviceExceptions.join()}`);
 const MAP_SERVICES = {};
 
-function clone(obj){
+function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
-function mappingYaml(serviceName, yaml){
-  if(!yaml){
+function mappingYaml(serviceName, yml) {
+  if (!yml) {
     return 'Нет описания для сервиса.';
   }
 
   return `
-    Описание: ${yaml.description || ''}
+    Описание: ${yml.description || ''}
     Родительские сервисы: ${MAP_SERVICES[serviceName].parents.join(',')}
     Дочерние сервисы: ${MAP_SERVICES[serviceName].childs.join(',')}
   `;
 }
 
-function createMapByYamlFiles(services){
+function createMapByYamlFiles(services) {
   services.forEach((service) => {
-    if(!service.yamlFile || !Array.isArray(service.yamlFile.dependentServices)) return;
+    if (!service.yamlFile || !Array.isArray(service.yamlFile.dependentServices)) return;
 
-    MAP_SERVICES[service.name] = MAP_SERVICES[service.name] || {parents: [], childs: []};
+    MAP_SERVICES[service.name] = MAP_SERVICES[service.name] || { parents: [], childs: [] };
 
     service.yamlFile.dependentServices.forEach((dependentService) => {
-      if(!MAP_SERVICES[service.name].childs.includes(dependentService)){
+      if (!MAP_SERVICES[service.name].childs.includes(dependentService)) {
         MAP_SERVICES[service.name].childs.push(dependentService);
       }
 
-      MAP_SERVICES[dependentService] = MAP_SERVICES[dependentService] || {parents: [], childs: []};
+      MAP_SERVICES[dependentService] = MAP_SERVICES[dependentService] || { parents: [], childs: [] };
 
-      if(!MAP_SERVICES[dependentService].parents.includes(service.name)){
+      if (!MAP_SERVICES[dependentService].parents.includes(service.name)) {
         MAP_SERVICES[dependentService].parents.push(service.name);
       }
     });
   });
 }
 
-function getOffChildsServices(offServiceName, childsNames, infoObject){
+function getOffChildsServices(offServiceName, childsNames, infoObject) {
   childsNames.forEach((childName) => {
-    if(MAP_SERVICES[childName].status === 'down' || infoObject.runParents.includes(childName) || infoObject.needOff.includes(childName)){
+    if (MAP_SERVICES[childName].status === 'down'
+          || infoObject.runParents.includes(childName)
+          || infoObject.needOff.includes(childName)) {
       return;
     }
     // 1. нет родителей и детей
     // 2 не входит в список родителей - защита от рекурсий
-    if(!MAP_SERVICES[childName].parents.length && !MAP_SERVICES[childName].childs.length && !infoObject.runParents.includes(childName)){
-      if(!infoObject.needOff.includes(childName)){
+    if (!MAP_SERVICES[childName].parents.length
+        && !MAP_SERVICES[childName].childs.length && !infoObject.runParents.includes(childName)) {
+      if (!infoObject.needOff.includes(childName)) {
         infoObject.needOff.push(childName);
       }
       return;
     }
 
     const parents = MAP_SERVICES[childName].parents
-        .filter(parent => parent.name !== offServiceName && parent.status === 'run')
-        .map(parent => parent.name);
+      .filter(parent => parent.name !== offServiceName && parent.status === 'run')
+      .map(parent => parent.name);
 
     parents.forEach((parent) => {
-      if(!infoObject.runParents.includes(parent)) infoObject.runParents.push(parent);
+      if (!infoObject.runParents.includes(parent)) infoObject.runParents.push(parent);
     });
 
-    if(!parents.length && !infoObject.needOff.includes(childName)){
+    if (!parents.length && !infoObject.needOff.includes(childName)) {
       infoObject.needOff.push(childName);
     }
 
@@ -77,31 +80,31 @@ function getOffChildsServices(offServiceName, childsNames, infoObject){
   });
 }
 
-function getOnChildsServices(childsNames, infoObject){
+function getOnChildsServices(childsNames, infoObject) {
   childsNames.forEach((childName) => {
-    if(infoObject.includes(childName)) return;
+    if (infoObject.includes(childName)) return;
 
     infoObject.push(childName);
 
-    if(!MAP_SERVICES[childName].childs.length) return;
+    if (!MAP_SERVICES[childName].childs.length) return;
 
     getOnChildsServices(MAP_SERVICES[childName].childs, infoObject);
   });
 }
 
-const execCmd = async cmd =>
-  new Promise((resolve, reject) => {
-    exec(cmd, (error, stdout /* , stderr */) => {
-      if (error && error.code !== 1) {
-        reject(error);
-        return;
-      }
-      resolve(stdout);
-    });
+const execCmd = async cmd => new Promise((resolve, reject) => {
+  exec(cmd, (error, stdout /* , stderr */) => {
+    if (error && error.code !== 1) {
+      reject(error);
+      return;
+    }
+    resolve(stdout);
   });
+});
 
 const getAvailableServices = async () => {
-  const list = await execCmd('find /etc/service/* -type l -exec test -e {} \\; -exec /usr/bin/sudo /usr/bin/sv status {} \\;');
+  const cmd = 'find /etc/service/* -type l -exec test -e {} \\; -exec /usr/bin/sudo /usr/bin/sv status {} \\;';
+  const list = await execCmd(cmd);
   // list = mock.svStatusResult;
   return list
     .split('\n')
@@ -110,7 +113,8 @@ const getAvailableServices = async () => {
       const [status, path] = line.split(': ');
       const name = path.slice(13);
 
-      MAP_SERVICES[name] = MAP_SERVICES[name] || {parents: [], childs: []};
+      MAP_SERVICES[name] = MAP_SERVICES[name] || { parents: [], childs: [] };
+      // eslint-disable-next-line prefer-destructuring
       MAP_SERVICES[name].id = (MAP_SERVICES[name].id || uuid()).split('-')[0];
       MAP_SERVICES[name].status = status;
 
@@ -130,10 +134,9 @@ const getFileDataByRunFile = async (serviceName, runFilePath, nameFileService) =
 
   let data;
 
-  try{
+  try {
     data = await statAsync(runFilePath);
-  }
-  catch(e){
+  } catch (e) {
     return undefined;
   }
 
@@ -147,19 +150,17 @@ const getFileDataByRunFile = async (serviceName, runFilePath, nameFileService) =
 
   let pathLog = fileData.substr(0, secondIndex) + nameFileService;
 
-  try{
+  try {
     data = await statAsync(pathLog);
-  }
-  catch(e){
+  } catch (e) {
     data = undefined;
   }
 
-  if(!data){
-    try{
+  if (!data) {
+    try {
       pathLog = `/home/twiket/${serviceName}/${nameFileService}`;
       data = await statAsync(pathLog);
-    }
-    catch(e){
+    } catch (e) {
       return undefined;
     }
   }
@@ -167,46 +168,61 @@ const getFileDataByRunFile = async (serviceName, runFilePath, nameFileService) =
   return readFileAsync(pathLog, 'utf-8');
 };
 
+const getYamlByNameService = async (nameService) => {
+  const fileData = await getFileDataByRunFile(nameService, `/etc/sv/${nameService}/run`, 'current/onetwotrip.yaml');
+
+  if (!fileData) {
+    return;
+  }
+
+  // eslint-disable-next-line consistent-return
+  return yaml.safeLoad(fileData);
+};
+
 const getAvailableServicesWithBranch = async () => {
-	let availableServices = await getAvailableServices();
+  const availableServices = await getAvailableServices();
 
-	const renewAvailableServices = availableServices.map((service) => {
-		service.fileService = `${service.path.replace('service', 'sv')}/run`;
-		return service;
-	});
+  const renewAvailableServices = availableServices.map((service) => {
+    // eslint-disable-next-line no-param-reassign
+    service.fileService = `${service.path.replace('service', 'sv')}/run`;
+    return service;
+  });
 
-	for(const service of renewAvailableServices){
-		service.branch = 'unknown';
+  // eslint-disable-next-line no-restricted-syntax
+  for (const service of renewAvailableServices) {
+    service.branch = 'unknown';
 
-		const fileData = await getFileDataByRunFile(service.name, service.fileService, 'revisions.log');
+    // eslint-disable-next-line no-await-in-loop
+    const fileData = await getFileDataByRunFile(service.name, service.fileService, 'revisions.log');
 
-		if(!fileData) continue;
+    // eslint-disable-next-line no-continue
+    if (!fileData) continue;
 
-		try{
-			const splitData = fileData.split('\n').filter(Boolean);
-			const splitLastData = splitData[splitData.length - 1].split(' ');
-			const year = [
-				splitLastData[7].substr(6, 2),
-				splitLastData[7].substr(4, 2),
-				splitLastData[7].substr(0, 4)
-			].join('.');
-			const time = [
-				splitLastData[7].substr(8, 2),
-				splitLastData[7].substr(10, 2)
-			].join(':');
+    try {
+      const splitData = fileData.split('\n').filter(Boolean);
+      const splitLastData = splitData[splitData.length - 1].split(' ');
+      const year = [
+        splitLastData[7].substr(6, 2),
+        splitLastData[7].substr(4, 2),
+        splitLastData[7].substr(0, 4),
+      ].join('.');
+      const time = [
+        splitLastData[7].substr(8, 2),
+        splitLastData[7].substr(10, 2),
+      ].join(':');
 
-			service.branch = `${splitLastData[1]}(${splitLastData[3]} ${time} ${year}`;
-			service.yamlFile = await getYamlByNameService(service.name);
-			service.yamlFileShow = mappingYaml(service.name, service.yamlFile);
-		}
-		catch(e){
-			console.log('getAvailableServicesWithBranch_error', e);
-		}
-	}
+      service.branch = `${splitLastData[1]}(${splitLastData[3]} ${time} ${year}`;
+      // eslint-disable-next-line no-await-in-loop
+      service.yamlFile = await getYamlByNameService(service.name);
+      service.yamlFileShow = mappingYaml(service.name, service.yamlFile);
+    } catch (e) {
+      console.log('getAvailableServicesWithBranch_error', e);
+    }
+  }
 
-	createMapByYamlFiles(renewAvailableServices);
+  createMapByYamlFiles(renewAvailableServices);
 
-	return renewAvailableServices;
+  return renewAvailableServices;
 };
 
 const chefStatus = async () => {
@@ -247,6 +263,7 @@ app.get('/', async (req, res) => {
 app.get('/chefStart', async (req, res) => {
   try {
     console.log('chefStart');
+    // noinspection ES6MissingAwait
     execCmd('/usr/bin/sudo /usr/bin/chef-client'); // no wait
     res.json({
       ok: true,
@@ -270,33 +287,27 @@ app.get('/chefKill', async (req, res) => {
   }
 });
 
-const getYamlByNameService = async (nameService) => {
-  const fileData = await getFileDataByRunFile(nameService, `/etc/sv/${nameService}/run`, 'current/onetwotrip.yaml');
-
-  if(!fileData){
-    return;
-  }
-
-  return yaml.safeLoad(fileData);
-};
 
 const doDependentServices = async (nameService, command, skipStatus) => {
   const parseFile = await getYamlByNameService(nameService);
 
-  if(!parseFile || !parseFile.dependentServices){
+  if (!parseFile || !parseFile.dependentServices) {
     return [];
   }
 
-  const dependentServices = parseFile.dependentServices.filter(ds => !skipStatus || MAP_SERVICES[ds].status !== skipStatus);
+  const dependentServices = parseFile.dependentServices.filter(ds => !skipStatus
+                                                                || MAP_SERVICES[ds].status !== skipStatus);
   const items = [];
 
-  for(const nameServiceSec of dependentServices){
+  // eslint-disable-next-line no-restricted-syntax
+  for (const nameServiceSec of dependentServices) {
     console.log('doDependentServices', 'START', nameServiceSec);
+    // eslint-disable-next-line no-await-in-loop
     const commandResult = await execCmd(`${command}${nameServiceSec}`);
 
     items.push(
-        {id: MAP_SERVICES[nameServiceSec].id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill')}
-    )
+      { id: MAP_SERVICES[nameServiceSec].id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill') },
+    );
   }
 
   return items;
@@ -309,31 +320,33 @@ app.get('/serviceOn/:name', async (req, res) => {
     const commandResult = await execCmd(`${command}${name}`);
 
     const items = [];
-    let startServices = [];
+    const startServices = [];
 
     getOnChildsServices(MAP_SERVICES[name].childs || [], startServices);
 
     MAP_SERVICES[name].status = 'run';
 
-    if(startServices.length){
-      for(const needOn of startServices){
-        const commandResult = await execCmd(`${command}${needOn}`);
+    if (startServices.length) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const needOn of startServices) {
+        // eslint-disable-next-line no-await-in-loop
+        const cmdResult = await execCmd(`${command}${needOn}`);
         items.push(
-            {id: MAP_SERVICES[needOn].id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill')}
-        )
+          { id: MAP_SERVICES[needOn].id, ok: cmdResult.startsWith('ok') || cmdResult.startsWith('kill') },
+        );
       }
     }
 
     items.push({
       id: MAP_SERVICES[name].id,
-      ok: commandResult.startsWith('ok')
+      ok: commandResult.startsWith('ok'),
     });
 
     // commandResult = mock.svStartResult;
     console.log(name, commandResult);
     res.json({
       items,
-      ok: true
+      ok: true,
     });
   } catch (err) {
     console.log(err);
@@ -348,11 +361,12 @@ app.get('/serviceOff/:name', async (req, res) => {
     let commandResult = await execCmd(`${command}${name}`);
     // commandResult =  mock.svStopResult;
     MAP_SERVICES[name].status = 'down';
+    // eslint-disable-next-line no-mixed-operators
     const runParentServices = (MAP_SERVICES[name] && MAP_SERVICES[name].parents || [])
-        .filter(parent => MAP_SERVICES[parent].status === 'run');
+      .filter(parent => MAP_SERVICES[parent].status === 'run');
     const finishResult = {
       runParents: runParentServices.map(runParent => runParent.name),
-      needOff: [name]
+      needOff: [name],
     };
     // идём вниз по детям и ищем кого можно выключить
     getOffChildsServices(name, clone(MAP_SERVICES[name].childs), finishResult);
@@ -361,12 +375,14 @@ app.get('/serviceOff/:name', async (req, res) => {
 
     const items = [];
 
-    if(finishResult.needOff.length){
-      for(const needOff of finishResult.needOff){
+    if (finishResult.needOff.length) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const needOff of finishResult.needOff) {
+        // eslint-disable-next-line no-await-in-loop
         commandResult = await execCmd(`${command}${needOff}`);
         items.push(
-            {id: MAP_SERVICES[needOff].id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill')}
-        )
+          { id: MAP_SERVICES[needOff].id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill') },
+        );
       }
     }
 
@@ -374,7 +390,7 @@ app.get('/serviceOff/:name', async (req, res) => {
     res.json({
       parentsServices: runParentServices,
       ok: true,
-      items
+      items,
     });
   } catch (err) {
     console.log(err);
@@ -388,41 +404,40 @@ app.get('/serviceAll/:action', async (req, res) => {
     let servicesList = await getAvailableServicesWithBranch();
     const items = [];
 
-    if(action !== 'RESTART'){
+    if (action !== 'RESTART') {
       const filterStatus = ['OFF', 'RESTART_ALIVE'].includes(action) ? 'run' : 'down';
       servicesList = servicesList.filter(service => service.status === filterStatus);
     }
 
     await Promise.map(
-        servicesList,
-        async (service) => {
-          console.log(`start for ${action}:`, service);
+      servicesList,
+      async (service) => {
+        console.log(`start for ${action}:`, service);
 
-          let generalCommand = '/usr/bin/sudo /usr/bin/sv start /etc/service/';
+        let generalCommand = '/usr/bin/sudo /usr/bin/sv start /etc/service/';
 
-          if(action === 'OFF'){
-            generalCommand = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-stop /etc/service/';
-          }
-          else if(['RESTART_ALIVE', 'RESTART'].includes(action)){
-            generalCommand = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-restart /etc/service/';
-          }
-
-          MAP_SERVICES[service.name].status = action === 'OFF' ? 'down' : 'run';
-
-          const commandResult = await execCmd(`${generalCommand}${service.name}`);
-
-          console.log(`finish for ${action}:`, service);
-
-          items.push({id: service.id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill')});
-        },
-        {
-          concurrency: 5
+        if (action === 'OFF') {
+          generalCommand = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-stop /etc/service/';
+        } else if (['RESTART_ALIVE', 'RESTART'].includes(action)) {
+          generalCommand = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-restart /etc/service/';
         }
+
+        MAP_SERVICES[service.name].status = action === 'OFF' ? 'down' : 'run';
+
+        const commandResult = await execCmd(`${generalCommand}${service.name}`);
+
+        console.log(`finish for ${action}:`, service);
+
+        items.push({ id: service.id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill') });
+      },
+      {
+        concurrency: 5,
+      },
     );
 
     res.json({
       ok: true,
-      items
+      items,
     });
   } catch (err) {
     console.log(err);
@@ -436,10 +451,9 @@ app.get('/serviceRestart/:name', async (req, res) => {
     const command = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-restart /etc/service/';
     const commandResult = await execCmd(`${command}${name}`);
     // commandResult = exports.svRestartResult;
-    try{
+    try {
       await doDependentServices(name, command);
-    }
-    catch(e){
+    } catch (e) {
       console.log('error restart dep services', e);
     }
 
@@ -456,4 +470,3 @@ app.get('/serviceRestart/:name', async (req, res) => {
 });
 
 app.listen(process.env.PORT || 3000);
-
