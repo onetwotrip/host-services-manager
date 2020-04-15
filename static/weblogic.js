@@ -115,7 +115,7 @@ function serviceOffWD(id, name) {
     }
 
     resp.items.forEach((item) => {
-      setColor(item.id, item.ok ? 'serviceOffWD' : 'error');
+      setColor(item.id, item.ok ? 'serviceOffg' : 'error');
     });
   }
   serviceAction('serviceOffWD', id, name, postAction);
