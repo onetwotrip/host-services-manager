@@ -104,7 +104,7 @@ const execCmd = async cmd => new Promise((resolve, reject) => {
 
 const getAvailableServices = async () => {
   const cmd = 'find /etc/service/* -type l -exec test -e {} \\; -exec /usr/bin/sudo /usr/bin/sv status {} \\;';
-  const list = await execCmd(cmd);
+  const list = 'true: avia: '; // await execCmd(cmd);
   // list = mock.svStatusResult;
   return list
     .split('\n')
@@ -354,7 +354,7 @@ app.get('/serviceOn/:name', async (req, res) => {
   }
 });
 
-app.get('/serviceOff/:name', async (req, res) => {
+app.get('/serviceOffWD/:name', async (req, res) => {
   try {
     const { name } = req.params;
     const command = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-stop /etc/service/';
@@ -391,6 +391,24 @@ app.get('/serviceOff/:name', async (req, res) => {
       parentsServices: runParentServices,
       ok: true,
       items,
+    });
+  } catch (err) {
+    console.log(err);
+    res.json({ ok: false });
+  }
+});
+
+app.get('/serviceOff/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    const command = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-stop /etc/service/';
+    let commandResult = await execCmd(`${command}${name}`);
+    // commandResult =  mock.svStopResult;
+    MAP_SERVICES[name].status = 'down';
+
+    console.log(name, commandResult);
+    res.json({
+      ok: commandResult.startsWith('ok') || commandResult.startsWith('kill'),
     });
   } catch (err) {
     console.log(err);
@@ -451,11 +469,11 @@ app.get('/serviceRestart/:name', async (req, res) => {
     const command = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-restart /etc/service/';
     const commandResult = await execCmd(`${command}${name}`);
     // commandResult = exports.svRestartResult;
-    try {
-      await doDependentServices(name, command);
-    } catch (e) {
-      console.log('error restart dep services', e);
-    }
+    // try {
+    //   await doDependentServices(name, command);
+    // } catch (e) {
+    //   console.log('error restart dep services', e);
+    // }
 
     MAP_SERVICES[name].status = 'run';
 
