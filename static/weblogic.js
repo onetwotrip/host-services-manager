@@ -25,6 +25,10 @@ function setColor(id, state) {
   document.getElementById(`serviceName${id}`).style['background-color'] = stateColors[state] || stateColors.error;
 }
 
+function getValueCheckbox(id) {
+  return document.getElementById(`checkbox${id}`).checked;
+}
+
 function enableLoadingIcon(id) {
   console.log(`loader${id}`);
   document.getElementById(`loader${id}`).style.visibility = 'visible';
@@ -97,7 +101,7 @@ function serviceAction(action, id, name, postAction) {
   });
 }
 
-function serviceOn(id, name) {
+function serviceOnWD(id, name) {
   function postAction(i, n, err, resp) {
     resp.items.forEach((item) => {
       setColor(item.id, item.ok ? 'serviceOn' : 'error');
@@ -106,6 +110,21 @@ function serviceOn(id, name) {
   serviceAction('serviceOn', id, name, postAction);
 }
 
+function serviceOnOne(id, name) {
+  function postAction(i, n, err, resp) {
+    resp.items.forEach((item) => {
+      setColor(item.id, item.ok ? 'serviceOn' : 'error');
+    });
+  }
+  serviceAction('serviceOn', id, name, postAction);
+}
+
+function serviceOn(id, name) {
+  const checked = getValueCheckbox(id);
+  const method = checked ? serviceOnWD : serviceOnOne;
+
+  method(id, name);
+}
 
 function serviceOffWD(id, name) {
   function postAction(i, n, err, resp) {
@@ -121,11 +140,19 @@ function serviceOffWD(id, name) {
   serviceAction('serviceOffWD', id, name, postAction);
 }
 
-function serviceOff(id, name) {
+function serviceOffOne(id, name) {
   function postAction(i, n, err, resp) {
     setColor(id, resp.ok ? 'serviceOff' : 'error');
   }
+
   serviceAction('serviceOff', id, name, postAction);
+}
+
+function serviceOff(id, name) {
+  const checked = getValueCheckbox(id);
+  const method = checked ? serviceOffWD : serviceOffOne;
+
+  method(id, name);
 }
 
 function serviceRestart(id, name) {

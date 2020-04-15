@@ -468,12 +468,6 @@ app.get('/serviceRestart/:name', async (req, res) => {
     const { name } = req.params;
     const command = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-restart /etc/service/';
     const commandResult = await execCmd(`${command}${name}`);
-    // commandResult = exports.svRestartResult;
-    // try {
-    //   await doDependentServices(name, command);
-    // } catch (e) {
-    //   console.log('error restart dep services', e);
-    // }
 
     MAP_SERVICES[name].status = 'run';
 
