@@ -104,7 +104,7 @@ const execCmd = async cmd => new Promise((resolve, reject) => {
 
 const getAvailableServices = async () => {
   const cmd = 'find /etc/service/* -type l -exec test -e {} \\; -exec /usr/bin/sudo /usr/bin/sv status {} \\;';
-  const list = 'true: avia: '; // await execCmd(cmd);
+  const list = await execCmd(cmd);
   // list = mock.svStatusResult;
   return list
     .split('\n')
