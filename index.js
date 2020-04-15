@@ -287,8 +287,7 @@ app.get('/chefKill', async (req, res) => {
   }
 });
 
-
-const doDependentServices = async (nameService, command, skipStatus) => {
+const doDependentServices = async (nameService, command, skipStatus) => { // eslint-disable-line
   const parseFile = await getYamlByNameService(nameService);
 
   if (!parseFile || !parseFile.dependentServices) {
@@ -402,7 +401,7 @@ app.get('/serviceOff/:name', async (req, res) => {
   try {
     const { name } = req.params;
     const command = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-stop /etc/service/';
-    let commandResult = await execCmd(`${command}${name}`);
+    const commandResult = await execCmd(`${command}${name}`);
     // commandResult =  mock.svStopResult;
     MAP_SERVICES[name].status = 'down';
 
