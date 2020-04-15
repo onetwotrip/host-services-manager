@@ -106,7 +106,8 @@ function serviceOn(id, name) {
   serviceAction('serviceOn', id, name, postAction);
 }
 
-function serviceOff(id, name) {
+
+function serviceOffWD(id, name) {
   function postAction(i, n, err, resp) {
     if (resp && Array.isArray(resp.parentsServices) && resp.parentsServices.length) {
       const attentionText = 'При выключении этого сервиса гарантируются проблемы со следующими сервисами:';
@@ -114,8 +115,15 @@ function serviceOff(id, name) {
     }
 
     resp.items.forEach((item) => {
-      setColor(item.id, item.ok ? 'serviceOff' : 'error');
+      setColor(item.id, item.ok ? 'serviceOffWD' : 'error');
     });
+  }
+  serviceAction('serviceOffWD', id, name, postAction);
+}
+
+function serviceOff(id, name) {
+  function postAction(i, n, err, resp) {
+    setColor(id, resp.ok ? 'serviceOff' : 'error');
   }
   serviceAction('serviceOff', id, name, postAction);
 }
