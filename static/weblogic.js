@@ -25,6 +25,10 @@ function setColor(id, state) {
   document.getElementById(`serviceName${id}`).style['background-color'] = stateColors[state] || stateColors.error;
 }
 
+function getValueCheckbox(id) {
+  return document.getElementById(`checkbox${id}`).checked;
+}
+
 function enableLoadingIcon(id) {
   console.log(`loader${id}`);
   document.getElementById(`loader${id}`).style.visibility = 'visible';
@@ -98,15 +102,22 @@ function serviceAction(action, id, name, postAction) {
 }
 
 function serviceOn(id, name) {
+  const checked = getValueCheckbox(id);
+
   function postAction(i, n, err, resp) {
-    resp.items.forEach((item) => {
-      setColor(item.id, item.ok ? 'serviceOn' : 'error');
-    });
+    if (checked) {
+      resp.items.forEach((item) => {
+        setColor(item.id, item.ok ? 'serviceOn' : 'error');
+      });
+    } else {
+      setColor(id, resp.ok ? 'serviceOn' : 'error');
+    }
   }
+
   serviceAction('serviceOn', id, name, postAction);
 }
 
-function serviceOff(id, name) {
+function serviceOffWD(id, name) {
   function postAction(i, n, err, resp) {
     if (resp && Array.isArray(resp.parentsServices) && resp.parentsServices.length) {
       const attentionText = 'При выключении этого сервиса гарантируются проблемы со следующими сервисами:';
@@ -117,7 +128,22 @@ function serviceOff(id, name) {
       setColor(item.id, item.ok ? 'serviceOff' : 'error');
     });
   }
+  serviceAction('serviceOffWD', id, name, postAction);
+}
+
+function serviceOffOne(id, name) {
+  function postAction(i, n, err, resp) {
+    setColor(id, resp.ok ? 'serviceOff' : 'error');
+  }
+
   serviceAction('serviceOff', id, name, postAction);
+}
+
+function serviceOff(id, name) {
+  const checked = getValueCheckbox(id);
+  const method = checked ? serviceOffWD : serviceOffOne;
+
+  method(id, name);
 }
 
 function serviceRestart(id, name) {
