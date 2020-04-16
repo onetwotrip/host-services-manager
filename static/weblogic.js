@@ -101,29 +101,20 @@ function serviceAction(action, id, name, postAction) {
   });
 }
 
-function serviceOnWD(id, name) {
-  function postAction(i, n, err, resp) {
-    resp.items.forEach((item) => {
-      setColor(item.id, item.ok ? 'serviceOn' : 'error');
-    });
-  }
-  serviceAction('serviceOn', id, name, postAction);
-}
-
-function serviceOnOne(id, name) {
-  function postAction(i, n, err, resp) {
-    resp.items.forEach((item) => {
-      setColor(item.id, item.ok ? 'serviceOn' : 'error');
-    });
-  }
-  serviceAction('serviceOn', id, name, postAction);
-}
-
 function serviceOn(id, name) {
   const checked = getValueCheckbox(id);
-  const method = checked ? serviceOnWD : serviceOnOne;
 
-  method(id, name);
+  function postAction(i, n, err, resp) {
+    if (checked) {
+      resp.items.forEach((item) => {
+        setColor(item.id, item.ok ? 'serviceOn' : 'error');
+      });
+    } else {
+      setColor(id, resp.ok ? 'serviceOn' : 'error');
+    }
+  }
+
+  serviceAction('serviceOn', id, name, postAction);
 }
 
 function serviceOffWD(id, name) {

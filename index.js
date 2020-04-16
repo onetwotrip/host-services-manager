@@ -286,8 +286,8 @@ app.get('/chefKill', async (req, res) => {
     res.json({ ok: false });
   }
 });
-
-const doDependentServices = async (nameService, command, skipStatus) => { // eslint-disable-line
+// eslint-disable-next-line no-unused-vars
+async function doDependentServices(nameService, command, skipStatus) {
   const parseFile = await getYamlByNameService(nameService);
 
   if (!parseFile || !parseFile.dependentServices) {
@@ -310,7 +310,7 @@ const doDependentServices = async (nameService, command, skipStatus) => { // esl
   }
 
   return items;
-};
+}
 
 app.get('/serviceOn/:name', async (req, res) => {
   try {
