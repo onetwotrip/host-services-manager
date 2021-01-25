@@ -314,7 +314,7 @@ const doDependentServices = async (nameService, command, skipStatus) => {
 };
 
 app.get('/killProcesses', async (req, res) => {
-  try{
+  try {
     const command = '/usr/bin/sudo ps axw|grep \'sshd[:]\' | awk \'{print $1}\' |xargs kill';
     const commandResult = await execCmd(command);
 

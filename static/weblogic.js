@@ -4,25 +4,25 @@ const urlPrefix = '/services-manager';
 // -------------- UI ------------------
 
 function closePopup() {
-  if(document.getElementById('dependentServiceOffModal')){
+  if (document.getElementById('dependentServiceOffModal')) {
     document.getElementById('dependentServiceOffModal').style.visibility = 'hidden';
   }
-  if(document.getElementById('overlay')){
+  if (document.getElementById('overlay')) {
     document.getElementById('overlay').classList.remove('active');
   }
 }
 
 function showModal(headerText, bodyText) {
-  if(document.getElementById('overlay')){
+  if (document.getElementById('overlay')) {
     document.getElementById('overlay').classList.add('active');
   }
-  if(document.getElementById('dependentServiceOffModal')){
+  if (document.getElementById('dependentServiceOffModal')) {
     document.getElementById('dependentServiceOffModal').style.visibility = 'visible';
   }
-  if(document.getElementById('dependentServiceOffModalHeader')){
+  if (document.getElementById('dependentServiceOffModalHeader')) {
     document.getElementById('dependentServiceOffModalHeader').innerHTML = headerText;
   }
-  if(document.getElementById('dependentServiceOffModalBody')){
+  if (document.getElementById('dependentServiceOffModalBody')) {
     document.getElementById('dependentServiceOffModalBody').innerHTML = bodyText;
   }
 }
@@ -167,7 +167,7 @@ function killProcesses() {
 
     closePopup();
 
-    if(err){
+    if (err) {
       showModal('Внимание!', 'Что то пошло не так, повторите ещё раз');
     }
 
