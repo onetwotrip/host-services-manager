@@ -312,6 +312,20 @@ async function doDependentServices(nameService, command, skipStatus) {
   return items;
 }
 
+app.get('/killProcesses', async (req, res) => {
+  try {
+    const command = '/usr/bin/sudo ps axw|grep \'sshd[:]\' | awk \'{print $1}\' |xargs kill';
+    const commandResult = await execCmd(command);
+
+    res.json({
+      ok: commandResult.startsWith('ok'),
+    });
+  } catch (err) {
+    console.log(err);
+    res.json({ ok: false });
+  }
+});
+
 app.get('/serviceOn/:name', async (req, res) => {
   try {
     const { name } = req.params;

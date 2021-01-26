@@ -11,6 +11,7 @@ html
     button(type='button' class='btnMass' onclick='serviceAll("OFF")')= 'turn OFF all services '
     button(type='button' class='btnMass' onclick='serviceAll("RESTART")')= 'RESTART all services'
     button(type='button' class='btnMass' onclick='serviceAll("RESTART_ALIVE")')= 'RESTART all enabled services'
+    button(type='button' class='btnMass' onclick='killProcesses()')= 'Kill unnecessary sshd processes'
     |
     h2= 'SERVER: ' + hostname
     |
