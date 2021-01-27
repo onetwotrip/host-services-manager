@@ -29,21 +29,25 @@ function mappingYaml(serviceName, yml) {
 
 function createMapByYamlFiles(services) {
   services.forEach((service) => {
-    if (!service.yamlFile || !Array.isArray(service.yamlFile.dependentServices)) return;
+    if (!service.yamlFile) return;
+    if (Array.isArray(service.yamlFile.parentalServices)) {
+      MAP_SERVICES[service.name] = MAP_SERVICES[service.name] || { parents: [], childs: [] };
 
-    MAP_SERVICES[service.name] = MAP_SERVICES[service.name] || { parents: [], childs: [] };
+      service.yamlFile.parentalServices.forEach((parentalService) => {
+        if (!MAP_SERVICES[service.name].parents.includes(parentalService)) {
+          MAP_SERVICES[service.name].parents.push(parentalService);
+        }
+      });
+    }
+    if (Array.isArray(service.yamlFile.dependentServices)) {
+      MAP_SERVICES[service.name] = MAP_SERVICES[service.name] || { parents: [], childs: [] };
 
-    service.yamlFile.dependentServices.forEach((dependentService) => {
-      if (!MAP_SERVICES[service.name].childs.includes(dependentService)) {
-        MAP_SERVICES[service.name].childs.push(dependentService);
-      }
-
-      MAP_SERVICES[dependentService] = MAP_SERVICES[dependentService] || { parents: [], childs: [] };
-
-      if (!MAP_SERVICES[dependentService].parents.includes(service.name)) {
-        MAP_SERVICES[dependentService].parents.push(service.name);
-      }
-    });
+      service.yamlFile.dependentServices.forEach((dependentService) => {
+        if (!MAP_SERVICES[service.name].childs.includes(dependentService)) {
+          MAP_SERVICES[service.name].childs.push(dependentService);
+        }
+      });
+    }
   });
 }
 
@@ -311,6 +315,20 @@ async function doDependentServices(nameService, command, skipStatus) {
 
   return items;
 }
+
+app.get('/killProcesses', async (req, res) => {
+  try {
+    const command = '/usr/bin/sudo ps axw|grep \'sshd[:]\' | awk \'{print $1}\' |xargs kill';
+    const commandResult = await execCmd(command);
+
+    res.json({
+      ok: commandResult.startsWith('ok'),
+    });
+  } catch (err) {
+    console.log(err);
+    res.json({ ok: false });
+  }
+});
 
 app.get('/killProcesses', async (req, res) => {
   try {
