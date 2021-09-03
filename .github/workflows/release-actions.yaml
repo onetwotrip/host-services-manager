@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install
+        run: |
+          npm config set spin false
+          npm install
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      - name: Create artefact
+        run: |
+          touch hsm-${{ steps.get_version.outputs.VERSION }}.tar.gz
+          tar -czf hsm-${{ steps.get_version.outputs.VERSION }}.tar.gz --exclude='./.*' --exclude=hsm-${{ steps.get_version.outputs.VERSION }}.tar.gz .
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: hsm-${{ steps.get_version.outputs.VERSION }}.tar.gz
