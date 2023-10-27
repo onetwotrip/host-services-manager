@@ -25,6 +25,10 @@ function setColor(id, state) {
   document.getElementById(`serviceName${id}`).style['background-color'] = stateColors[state] || stateColors.error;
 }
 
+function getValueCheckbox(id) {
+  return document.getElementById(`checkbox${id}`).checked;
+}
+
 function enableLoadingIcon(id) {
   console.log(`loader${id}`);
   document.getElementById(`loader${id}`).style.visibility = 'visible';
@@ -98,11 +102,18 @@ function serviceAction(action, id, name, postAction, query = '') {
 }
 
 function serviceOn(id, name, withDependencies) {
+  const checked = getValueCheckbox(id);
+
   function postAction(i, n, err, resp) {
-    resp.items.forEach((item) => {
-      setColor(item.id, item.ok ? 'serviceOn' : 'error');
-    });
+    if (checked) {
+      resp.items.forEach((item) => {
+        setColor(item.id, item.ok ? 'serviceOn' : 'error');
+      });
+    } else {
+      setColor(id, resp.ok ? 'serviceOn' : 'error');
+    }
   }
+
   serviceAction('serviceOn', id, name, postAction, withDependencies ? '?withDependencies=true' : '');
 }
 
