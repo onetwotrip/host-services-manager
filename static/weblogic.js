@@ -84,12 +84,12 @@ function makeRequest(path, callback) {
 
 // -------------- LOGIC ------------------
 
-function serviceAction(action, id, name, postAction) {
+function serviceAction(action, id, name, postAction, query = '') {
   console.log(action, id, name);
   enableLoadingIcon(id);
   disableServiceButtons(id);
 
-  makeRequest(`/${action}/${name}`, (err, resp) => {
+  makeRequest(`/${action}/${name}${query}`, (err, resp) => {
     console.log(action, 'response', id, name, err, resp);
     disableLoadingIcon(id);
     enableServiceButtons(id);
@@ -97,13 +97,13 @@ function serviceAction(action, id, name, postAction) {
   });
 }
 
-function serviceOn(id, name) {
+function serviceOn(id, name, withDependencies) {
   function postAction(i, n, err, resp) {
     resp.items.forEach((item) => {
       setColor(item.id, item.ok ? 'serviceOn' : 'error');
     });
   }
-  serviceAction('serviceOn', id, name, postAction);
+  serviceAction('serviceOn', id, name, postAction, withDependencies ? '?withDependencies=true' : '');
 }
 
 function serviceOff(id, name) {

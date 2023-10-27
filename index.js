@@ -279,6 +279,7 @@ const doDependentServices = async (nameService, command, skipStatus) => {
 app.get('/serviceOn/:name', async (req, res) => {
   try {
     const { name } = req.params;
+    const { withDependencies } = req.query;
     const command = '/usr/bin/sudo /usr/bin/sv start /etc/service/';
     const commandResult = await execCmd(`${command}${name}`);
 
@@ -289,7 +290,7 @@ app.get('/serviceOn/:name', async (req, res) => {
 
     MAP_SERVICES[name].status = 'run';
 
-    if (startServices.length) {
+    if (startServices.length && withDependencies) {
       await Promise.map(
         startServices,
         async (needOn) => {
