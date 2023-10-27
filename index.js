@@ -11,10 +11,6 @@ const serviceExceptions = (process.env.EXCEPTIONS && process.env.EXCEPTIONS.spli
 console.log(`Exceptions list: ${serviceExceptions.join()}`);
 const MAP_SERVICES = {};
 
-function clone(obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
-
 function mappingYaml(serviceName, yml) {
   if (!yml) {
     return 'Нет описания для сервиса.';
@@ -44,39 +40,6 @@ function createMapByYamlFiles(services) {
         MAP_SERVICES[dependentService].parents.push(service.name);
       }
     });
-  });
-}
-
-function getOffChildsServices(offServiceName, childsNames, infoObject) {
-  childsNames.forEach((childName) => {
-    if (MAP_SERVICES[childName].status === 'down'
-          || infoObject.runParents.includes(childName)
-          || infoObject.needOff.includes(childName)) {
-      return;
-    }
-    // 1. нет родителей и детей
-    // 2 не входит в список родителей - защита от рекурсий
-    if (!MAP_SERVICES[childName].parents.length
-        && !MAP_SERVICES[childName].childs.length && !infoObject.runParents.includes(childName)) {
-      if (!infoObject.needOff.includes(childName)) {
-        infoObject.needOff.push(childName);
-      }
-      return;
-    }
-
-    const parents = MAP_SERVICES[childName].parents
-      .filter(parent => parent.name !== offServiceName && parent.status === 'run')
-      .map(parent => parent.name);
-
-    parents.forEach((parent) => {
-      if (!infoObject.runParents.includes(parent)) infoObject.runParents.push(parent);
-    });
-
-    if (!parents.length && !infoObject.needOff.includes(childName)) {
-      infoObject.needOff.push(childName);
-    }
-
-    getOffChildsServices(offServiceName, clone(MAP_SERVICES[childName].childs), infoObject);
   });
 }
 
@@ -369,8 +332,6 @@ app.get('/serviceOff/:name', async (req, res) => {
       runParents: runParentServices.map(runParent => runParent.name),
       needOff: [name],
     };
-    // идём вниз по детям и ищем кого можно выключить
-    // getOffChildsServices(name, clone(MAP_SERVICES[name].childs), finishResult);
 
     finishResult.needOff = finishResult.needOff.filter(serviceName => !finishResult.runParents.includes(serviceName));
 
