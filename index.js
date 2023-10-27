@@ -327,14 +327,15 @@ app.get('/serviceOn/:name', async (req, res) => {
     MAP_SERVICES[name].status = 'run';
 
     if (startServices.length) {
-      // eslint-disable-next-line no-restricted-syntax
-      for (const needOn of startServices) {
-        // eslint-disable-next-line no-await-in-loop
-        const cmdResult = await execCmd(`${command}${needOn}`);
-        items.push(
-          { id: MAP_SERVICES[needOn].id, ok: cmdResult.startsWith('ok') || cmdResult.startsWith('kill') },
-        );
-      }
+      await Promise.map(
+        startServices,
+        async (needOn) => {
+          const cmdResult = await execCmd(`${command}${needOn}`);
+          items.push(
+            { id: MAP_SERVICES[needOn].id, ok: cmdResult.startsWith('ok') || cmdResult.startsWith('kill') },
+          );
+        },
+      );
     }
 
     items.push({
@@ -369,7 +370,7 @@ app.get('/serviceOff/:name', async (req, res) => {
       needOff: [name],
     };
     // идём вниз по детям и ищем кого можно выключить
-    getOffChildsServices(name, clone(MAP_SERVICES[name].childs), finishResult);
+    // getOffChildsServices(name, clone(MAP_SERVICES[name].childs), finishResult);
 
     finishResult.needOff = finishResult.needOff.filter(serviceName => !finishResult.runParents.includes(serviceName));
 
