@@ -11,6 +11,7 @@ html
     button(type='button' class='btnMass' onclick='serviceAll("OFF")')= 'turn OFF all services '
     button(type='button' class='btnMass' onclick='serviceAll("RESTART")')= 'RESTART all services'
     button(type='button' class='btnMass' onclick='serviceAll("RESTART_ALIVE")')= 'RESTART all enabled services'
+    button(type='button' class='btnMass' onclick='killProcesses()')= 'Kill unnecessary sshd processes'
     |
     h2= 'SERVER: ' + hostname
     |
@@ -39,6 +40,7 @@ html
           else
             div(class='serviceName serviceOff tooltip' id='serviceName'+service.id)= service.name
               span(class='tooltiptext')= service.yamlFileShow
+          input(type='checkbox' title='Работа с зависимостями' id='checkbox'+service.id)
           button(type='button' class='btn' id='btnOn'+service.id onclick='serviceOn("'+service.id+'","'+service.name+'")')= 'START'
           button(type='button' class='btn' id='btnOn'+service.id onclick='serviceOn("'+service.id+'","'+service.name+'",1)')= 'START WITH DEPENDENCIES'
           button(type='button' class='btn' id='btnOff'+service.id onclick='serviceOff("'+service.id+'","'+service.name+'")')= 'STOP'

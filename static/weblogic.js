@@ -4,15 +4,27 @@ const urlPrefix = '/services-manager';
 // -------------- UI ------------------
 
 function closePopup() {
-  document.getElementById('dependentServiceOffModal').style.visibility = 'hidden';
-  document.getElementById('overlay').classList.remove('active');
+  if (document.getElementById('dependentServiceOffModal')) {
+    document.getElementById('dependentServiceOffModal').style.visibility = 'hidden';
+  }
+  if (document.getElementById('overlay')) {
+    document.getElementById('overlay').classList.remove('active');
+  }
 }
 
 function showModal(headerText, bodyText) {
-  document.getElementById('overlay').classList.add('active');
-  document.getElementById('dependentServiceOffModal').style.visibility = 'visible';
-  document.getElementById('dependentServiceOffModalHeader').innerHTML = headerText;
-  document.getElementById('dependentServiceOffModalBody').innerHTML = bodyText;
+  if (document.getElementById('overlay')) {
+    document.getElementById('overlay').classList.add('active');
+  }
+  if (document.getElementById('dependentServiceOffModal')) {
+    document.getElementById('dependentServiceOffModal').style.visibility = 'visible';
+  }
+  if (document.getElementById('dependentServiceOffModalHeader')) {
+    document.getElementById('dependentServiceOffModalHeader').innerHTML = headerText;
+  }
+  if (document.getElementById('dependentServiceOffModalBody')) {
+    document.getElementById('dependentServiceOffModalBody').innerHTML = bodyText;
+  }
 }
 
 const stateColors = {
@@ -117,7 +129,7 @@ function serviceOn(id, name, withDependencies) {
   serviceAction('serviceOn', id, name, postAction, withDependencies ? '?withDependencies=true' : '');
 }
 
-function serviceOff(id, name) {
+function serviceOffWD(id, name) {
   function postAction(i, n, err, resp) {
     if (resp && Array.isArray(resp.parentsServices) && resp.parentsServices.length) {
       const attentionText = 'При выключении этого сервиса гарантируются проблемы со следующими сервисами:';
@@ -128,7 +140,22 @@ function serviceOff(id, name) {
       setColor(item.id, item.ok ? 'serviceOff' : 'error');
     });
   }
+  serviceAction('serviceOffWD', id, name, postAction);
+}
+
+function serviceOffOne(id, name) {
+  function postAction(i, n, err, resp) {
+    setColor(id, resp.ok ? 'serviceOff' : 'error');
+  }
+
   serviceAction('serviceOff', id, name, postAction);
+}
+
+function serviceOff(id, name) {
+  const checked = getValueCheckbox(id);
+  const method = checked ? serviceOffWD : serviceOffOne;
+
+  method(id, name);
 }
 
 function serviceRestart(id, name) {
@@ -155,6 +182,24 @@ function chefServiceOff() {
   makeRequest('/chefKill', (err, resp) => {
     console.log('chefKill', 'response', err, resp);
     setTimeout(reloadPage, 1000);
+  });
+}
+
+function killProcesses() {
+  disableBigButtons();
+  showModal('Внимание!', 'Идёт дроп ненужных sshd процессов');
+  makeRequest('/killProcesses', (err, resp) => {
+    console.log('killProcesses', 'response', err, resp);
+
+    closePopup();
+
+    if (err) {
+      showModal('Внимание!', 'Что то пошло не так, повторите ещё раз');
+    }
+
+    setTimeout(() => {
+      enableBigButtons();
+    }, 1000);
   });
 }
 
