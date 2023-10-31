@@ -53,7 +53,7 @@ function getOnChildsServices(childsNames, infoObject) {
 
     infoObject.push(childName);
 
-    if (!MAP_SERVICES[childName].childs.length) return;
+    if (!MAP_SERVICES[childName] || !MAP_SERVICES[childName].childs.length) return;
 
     getOnChildsServices(MAP_SERVICES[childName].childs, infoObject);
   });
@@ -223,7 +223,7 @@ app.get('/', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -237,7 +237,7 @@ app.get('/chefStart', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -250,7 +250,7 @@ app.get('/chefKill', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 // eslint-disable-next-line no-unused-vars
@@ -289,7 +289,7 @@ app.get('/killProcesses', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -303,7 +303,7 @@ app.get('/killProcesses', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -325,10 +325,19 @@ app.get('/serviceOn/:name', async (req, res) => {
       await Promise.map(
         startServices,
         async (needOn) => {
-          const cmdResult = await execCmd(`${command}${needOn}`);
-          items.push(
-            { id: MAP_SERVICES[needOn].id, ok: cmdResult.startsWith('ok') || cmdResult.startsWith('kill') },
-          );
+          try {
+            const cmdResult = await execCmd(`${command}${needOn}`);
+            items.push({
+              id: MAP_SERVICES[needOn] && MAP_SERVICES[needOn].id,
+              ok: cmdResult.startsWith('ok') || cmdResult.startsWith('kill'),
+            });
+          } catch (err) {
+            items.push({
+              id: MAP_SERVICES[needOn] && MAP_SERVICES[needOn].id,
+              err: err.message || err,
+              ok: false,
+            });
+          }
         },
       );
     }
@@ -346,7 +355,7 @@ app.get('/serviceOn/:name', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -388,7 +397,7 @@ app.get('/serviceOffWD/:name', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -406,7 +415,7 @@ app.get('/serviceOff/:name', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -453,7 +462,7 @@ app.get('/serviceAll/:action', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -471,7 +480,7 @@ app.get('/serviceRestart/:name', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
