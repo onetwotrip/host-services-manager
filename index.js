@@ -52,10 +52,6 @@ function getOnChildsServices(childsNames, infoObject) {
     if (infoObject.includes(childName)) return;
 
     infoObject.push(childName);
-
-    if (!MAP_SERVICES[childName] || !MAP_SERVICES[childName].childs.length) return;
-
-    getOnChildsServices(MAP_SERVICES[childName].childs, infoObject);
   });
 }
 
