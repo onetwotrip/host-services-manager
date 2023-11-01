@@ -118,14 +118,30 @@ function serviceAction(action, id, name, postAction, query = '') {
 function serviceOn(id, name, withDependencies) {
   const checked = getValueCheckbox(id);
 
+  showModal('Внимание!', 'Идёт запуск сервиса');
+
   function postAction(i, n, err, resp) {
-    const runServices = [];
+    const runServices = {
+      ok: [
+        'Сервисы включены:',
+      ],
+      error: [
+        'Сервисы не включены:',
+      ],
+    };
 
     if (checked || withDependencies) {
       resp.items.forEach((item) => {
-        if (!item.id) return;
+        const nameList = item.ok ? 'ok' : 'error';
+
+        if (!item.id) {
+          runServices[nameList].push(item.name || 'unknown_service');
+          return;
+        }
         if (item.name) {
-          runServices.push(item.name);
+          runServices[nameList].push(item.name);
+        } else {
+          runServices[nameList].push('unknown_service');
         }
 
         setColor(item.id, item.ok ? 'serviceOn' : 'error');
@@ -134,7 +150,8 @@ function serviceOn(id, name, withDependencies) {
       setColor(id, resp.ok ? 'serviceOn' : 'error');
     }
 
-    showModal('Внимание!', ['Сервисы включены:'].concat(runServices).join('<br>'));
+    closePopup();
+    showModal('Внимание!', runServices.ok.concat(runServices.error).join('<br>'));
   }
 
   serviceAction('serviceOn', id, name, postAction, withDependencies ? '?withDependencies=true' : '');
