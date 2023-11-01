@@ -66,6 +66,7 @@ function enableBigButtons() {
 
 function disableServiceButtons(id) {
   document.getElementById(`btnOn${id}`).setAttribute('disabled', 'disabled');
+  document.getElementById(`btnBigOn${id}`).setAttribute('disabled', 'disabled');
   document.getElementById(`btnOff${id}`).setAttribute('disabled', 'disabled');
   document.getElementById(`btnRestart${id}`).setAttribute('disabled', 'disabled');
   disableBigButtons();
@@ -74,6 +75,7 @@ function disableServiceButtons(id) {
 
 function enableServiceButtons(id) {
   document.getElementById(`btnOn${id}`).removeAttribute('disabled');
+  document.getElementById(`btnBigOn${id}`).removeAttribute('disabled');
   document.getElementById(`btnOff${id}`).removeAttribute('disabled');
   document.getElementById(`btnRestart${id}`).removeAttribute('disabled');
   enableBigButtons();
@@ -117,13 +119,22 @@ function serviceOn(id, name, withDependencies) {
   const checked = getValueCheckbox(id);
 
   function postAction(i, n, err, resp) {
-    if (checked) {
+    const runServices = [];
+
+    if (checked || withDependencies) {
       resp.items.forEach((item) => {
+        if (!item.id) return;
+        if (item.name) {
+          runServices.push(item.name);
+        }
+
         setColor(item.id, item.ok ? 'serviceOn' : 'error');
       });
     } else {
       setColor(id, resp.ok ? 'serviceOn' : 'error');
     }
+
+    showModal('Внимание!', ['Сервисы включены:'].concat(runServices).join('<br>'));
   }
 
   serviceAction('serviceOn', id, name, postAction, withDependencies ? '?withDependencies=true' : '');
@@ -222,8 +233,9 @@ function serviceAll(action) {
           color = 'serviceOff';
         }
       }
-
-      setColor(item.id, color);
+      if (item.id) {
+        setColor(item.id, color);
+      }
     });
 
     closePopup();
