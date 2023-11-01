@@ -66,6 +66,7 @@ function enableBigButtons() {
 
 function disableServiceButtons(id) {
   document.getElementById(`btnOn${id}`).setAttribute('disabled', 'disabled');
+  document.getElementById(`btnBigOn${id}`).setAttribute('disabled', 'disabled');
   document.getElementById(`btnOff${id}`).setAttribute('disabled', 'disabled');
   document.getElementById(`btnRestart${id}`).setAttribute('disabled', 'disabled');
   disableBigButtons();
@@ -74,6 +75,7 @@ function disableServiceButtons(id) {
 
 function enableServiceButtons(id) {
   document.getElementById(`btnOn${id}`).removeAttribute('disabled');
+  document.getElementById(`btnBigOn${id}`).removeAttribute('disabled');
   document.getElementById(`btnOff${id}`).removeAttribute('disabled');
   document.getElementById(`btnRestart${id}`).removeAttribute('disabled');
   enableBigButtons();
@@ -116,14 +118,42 @@ function serviceAction(action, id, name, postAction, query = '') {
 function serviceOn(id, name, withDependencies) {
   const checked = getValueCheckbox(id);
 
+  showModal('Внимание!', `Идёт запуск сервис${withDependencies ? 'ов' : 'а'} для работы ${name}!`);
+
   function postAction(i, n, err, resp) {
-    if (checked) {
+    const runServices = {
+      ok: [
+        'Сервисы включены:',
+      ],
+      error: [
+        'Сервисы не включены:',
+      ],
+    };
+
+    if (checked || withDependencies) {
       resp.items.forEach((item) => {
+        const nameList = item.ok ? 'ok' : 'error';
+
+        if (!item.id) {
+          runServices[nameList].push(item.name || 'unknown_service');
+          return;
+        }
+        if (item.name) {
+          runServices[nameList].push(item.name);
+        } else {
+          runServices[nameList].push('unknown_service');
+        }
+
         setColor(item.id, item.ok ? 'serviceOn' : 'error');
       });
     } else {
+      runServices.ok.push(name);
       setColor(id, resp.ok ? 'serviceOn' : 'error');
     }
+
+    closePopup();
+
+    showModal('Внимание!', runServices.ok.concat(runServices.error.length === 1 ? [] : runServices.error).join('<br>'));
   }
 
   serviceAction('serviceOn', id, name, postAction, withDependencies ? '?withDependencies=true' : '');
@@ -222,8 +252,9 @@ function serviceAll(action) {
           color = 'serviceOff';
         }
       }
-
-      setColor(item.id, color);
+      if (item.id) {
+        setColor(item.id, color);
+      }
     });
 
     closePopup();

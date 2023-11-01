@@ -52,10 +52,6 @@ function getOnChildsServices(childsNames, infoObject) {
     if (infoObject.includes(childName)) return;
 
     infoObject.push(childName);
-
-    if (!MAP_SERVICES[childName].childs.length) return;
-
-    getOnChildsServices(MAP_SERVICES[childName].childs, infoObject);
   });
 }
 
@@ -223,7 +219,7 @@ app.get('/', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -237,7 +233,7 @@ app.get('/chefStart', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -250,7 +246,7 @@ app.get('/chefKill', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 // eslint-disable-next-line no-unused-vars
@@ -289,7 +285,7 @@ app.get('/killProcesses', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -303,7 +299,7 @@ app.get('/killProcesses', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -325,16 +321,28 @@ app.get('/serviceOn/:name', async (req, res) => {
       await Promise.map(
         startServices,
         async (needOn) => {
-          const cmdResult = await execCmd(`${command}${needOn}`);
-          items.push(
-            { id: MAP_SERVICES[needOn].id, ok: cmdResult.startsWith('ok') || cmdResult.startsWith('kill') },
-          );
+          if (name === needOn) return;
+          try {
+            const cmdResult = await execCmd(`${command}${needOn}`);
+            items.push({
+              id: MAP_SERVICES[needOn] && MAP_SERVICES[needOn].id,
+              name: needOn,
+              ok: cmdResult.startsWith('ok') || cmdResult.startsWith('kill'),
+            });
+          } catch (err) {
+            items.push({
+              name: needOn,
+              err: err.message || err,
+              ok: false,
+            });
+          }
         },
       );
     }
 
     items.push({
       id: MAP_SERVICES[name].id,
+      name,
       ok: commandResult.startsWith('ok'),
     });
 
@@ -346,7 +354,7 @@ app.get('/serviceOn/:name', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -354,7 +362,7 @@ app.get('/serviceOffWD/:name', async (req, res) => {
   try {
     const { name } = req.params;
     const command = '/usr/bin/sudo /usr/bin/sv -v -w 30 force-stop /etc/service/';
-    let commandResult = await execCmd(`${command}${name}`);
+    const commandResult = await execCmd(`${command}${name}`);
     // commandResult =  mock.svStopResult;
     MAP_SERVICES[name].status = 'down';
     // eslint-disable-next-line no-mixed-operators
@@ -370,25 +378,37 @@ app.get('/serviceOffWD/:name', async (req, res) => {
     const items = [];
 
     if (finishResult.needOff.length) {
-      // eslint-disable-next-line no-restricted-syntax
-      for (const needOff of finishResult.needOff) {
-        // eslint-disable-next-line no-await-in-loop
-        commandResult = await execCmd(`${command}${needOff}`);
-        items.push(
-          { id: MAP_SERVICES[needOff].id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill') },
-        );
-      }
+      await Promise.map(
+        finishResult.needOff,
+        async (needOff) => {
+          try {
+            const commandResultSec = await execCmd(`${command}${needOff}`);
+            items.push({
+              id: MAP_SERVICES[needOff] && MAP_SERVICES[needOff].id,
+              name: needOff,
+              ok: commandResultSec.startsWith('ok') || commandResultSec.startsWith('kill'),
+            });
+          } catch (err) {
+            items.push({
+              name: needOff,
+              err: err.message || err,
+              ok: false,
+            });
+          }
+        },
+      );
     }
 
     console.log(name, commandResult);
     res.json({
       parentsServices: runParentServices,
+      name,
       ok: true,
       items,
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -402,11 +422,11 @@ app.get('/serviceOff/:name', async (req, res) => {
 
     console.log(name, commandResult);
     res.json({
-      ok: commandResult.startsWith('ok') || commandResult.startsWith('kill'),
+      name, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill'),
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -414,14 +434,13 @@ app.get('/serviceAll/:action', async (req, res) => {
   try {
     const { action } = req.params;
     let servicesList = await getAvailableServicesWithBranch();
-    const items = [];
 
     if (action !== 'RESTART') {
       const filterStatus = ['OFF', 'RESTART_ALIVE'].includes(action) ? 'run' : 'down';
       servicesList = servicesList.filter(service => service.status === filterStatus);
     }
 
-    await Promise.map(
+    const items = await Promise.map(
       servicesList,
       async (service) => {
         console.log(`start for ${action}:`, service);
@@ -440,10 +459,11 @@ app.get('/serviceAll/:action', async (req, res) => {
 
         console.log(`finish for ${action}:`, service);
 
-        items.push({ id: service.id, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill') });
-      },
-      {
-        concurrency: 5,
+        return {
+          id: service.id,
+          name: service.name,
+          ok: commandResult.startsWith('ok') || commandResult.startsWith('kill'),
+        };
       },
     );
 
@@ -453,7 +473,7 @@ app.get('/serviceAll/:action', async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 
@@ -467,11 +487,11 @@ app.get('/serviceRestart/:name', async (req, res) => {
 
     console.log(name, commandResult);
     res.json({
-      ok: commandResult.startsWith('ok') || commandResult.startsWith('kill'),
+      name, ok: commandResult.startsWith('ok') || commandResult.startsWith('kill'),
     });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ err: err.message || err, ok: false });
   }
 });
 

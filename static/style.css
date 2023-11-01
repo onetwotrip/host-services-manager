@@ -85,8 +85,13 @@
 }
 
 .btn {
-  margin: 0px 7px;
+  margin: 0px 5px;
   width: 80px;
+}
+
+.btnBig {
+  margin: 0px 5px;
+  width: 250px;
 }
 
 .btnMass {

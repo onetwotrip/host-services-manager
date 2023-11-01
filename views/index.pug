@@ -42,7 +42,7 @@ html
               span(class='tooltiptext')= service.yamlFileShow
           input(type='checkbox' title='Работа с зависимостями' id='checkbox'+service.id)
           button(type='button' class='btn' id='btnOn'+service.id onclick='serviceOn("'+service.id+'","'+service.name+'")')= 'START'
-          button(type='button' class='btn' id='btnOn'+service.id onclick='serviceOn("'+service.id+'","'+service.name+'",1)')= 'START WITH DEPENDENCIES'
+          button(type='button' class='btnBig' id='btnBigOn'+service.id onclick='serviceOn("'+service.id+'","'+service.name+'",1)')= 'START WITH DEPENDENCIES'
           button(type='button' class='btn' id='btnOff'+service.id onclick='serviceOff("'+service.id+'","'+service.name+'")')= 'STOP'
           button(type='button' class='btn' id='btnRestart'+service.id onclick='serviceRestart("'+service.id+'","'+service.name+'")')= 'RESTART'
           img(src='loader.gif' class='loader' id='loader'+service.id)
